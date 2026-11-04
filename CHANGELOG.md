@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- **`node cli.mjs help` lists every studio command**, built from the tool list, so `music`, `apply` and `guide` show up and new tools appear by themselves (#13).
+
+### Thanks
+
+- @bfs2021 for the generated help (#13).
+
 ## 0.11.0 — story documents
 
 - **`studio_apply` and `studio_guide`** (59 tools): one JSON document (`aes.story/1`) becomes a finished short. Generated
