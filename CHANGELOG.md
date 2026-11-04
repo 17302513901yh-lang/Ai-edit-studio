@@ -5,10 +5,11 @@
 - **`node cli.mjs help` lists every studio command**, built from the tool list, so `music`, `apply` and `guide` show up and new tools appear by themselves (#13).
 - **Clearer file errors**: a rejected file now names the path you passed and the check that failed (not a regular file, the extension with the allowed list, or the size against the limit) (#14).
 - **A damaged or non-media file is named**: when ffprobe cannot read a video, still or audio file, the error is `UNSUPPORTED_MEDIA` with the file and ffprobe's reason, instead of "Process exited with code 1" (#19).
+- **Long transcripts import**: `studio_transcript` import and the FFmpeg-whisper path no longer stop at the 300-cue caption limit, and WebVTT files with header lines, cue settings, cue ids, short `mm:ss.ttt` times or `NOTE`/`STYLE` blocks are read correctly (#20).
 
 ### Thanks
 
-- @bfs2021 for the generated help (#13).
+- @bfs2021 for the generated help (#13) and the long SRT/VTT transcript import (#20).
 - @wized2 for the clearer file errors (#14) and the named probe failures (#19).
 
 ## 0.11.0 — story documents
