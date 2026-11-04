@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- **HTTP API: 404 for things that do not exist.** An unknown project, revision, export, section, comment, build, brand, style, recipe, run or tool now answers 404 instead of 400, so HTTP clients can tell a missing thing from a bad request (#12).
+
+### Thanks
+
+- @wized2 for the 404 status codes (#12), the first outside contribution to AI Edit Studio.
+
 ## 0.11.0 — story documents
 
 - **`studio_apply` and `studio_guide`** (59 tools): one JSON document (`aes.story/1`) becomes a finished short. Generated
