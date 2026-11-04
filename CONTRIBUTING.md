@@ -22,8 +22,9 @@ node cli.mjs doctor   # checks Node, FFmpeg and the encoders
 node --test           # the test suite
 ```
 
-FFmpeg: `winget install ffmpeg` or `choco install ffmpeg` on Windows, `brew install ffmpeg-full` on macOS,
-`sudo apt-get install ffmpeg` on Linux. Tests that need FFmpeg skip themselves when it is missing.
+FFmpeg, as CI installs it: `choco install ffmpeg` on Windows, `brew install ffmpeg-full` on macOS,
+`sudo apt-get install ffmpeg` on Linux. Part of the test suite renders real video, so install FFmpeg before you run
+the tests.
 
 To try the tools from an agent while you work: `claude mcp add ai-edit-studio -- node mcp.mjs`, or start the
 editor with `npm start`.
