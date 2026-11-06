@@ -14,6 +14,7 @@
 - **Transitions in the OTIO export**: fades become `SMPTE_Dissolve` and other transitions `Custom_Transition` items, in whole frames, so they survive the hand-off to Resolve and other editors (#35).
 - **Agents hear about music and story documents**: the MCP instructions and `studio_schema` now name `studio_music`, `studio_guide {topic:"story"}` and `studio_apply` (#36).
 - **TROUBLESHOOTING entries** for `HDR_NOT_SUPPORTED`, `SOURCE_CHANGED`, `MEDIA_TOO_LONG` and `ENCODER_MISSING`, also in the troubleshoot skill, with a test that every documented error code exists in the code (#37).
+- **Up-to-date tool count and version**: the npm description, INSTALL.md, the OpenAI example, the editor and the launch page say 59 tools and Director 0.11, and a test keeps them in step with the code (#34).
 
 ### Thanks
 
@@ -21,7 +22,7 @@
 - @wized2 for the clearer file errors (#14) and the named probe failures (#19).
 - @tnalbant for the accent-folding brand kit ids that keep old kits readable (#29).
 - @DaniLlano for the chapter fix (#30), the preview shapes (#31), the safer speech setup (#32), OTIO transitions (#35) and the music and story pointers for agents (#36).
-- @Aaqibhafeezkhan for the troubleshooting entries and their error-code test (#37).
+- @Aaqibhafeezkhan for the troubleshooting entries and their error-code test (#37) and the tool-count and version sync with its docs test (#34).
 
 ## 0.11.0 — story documents
 
