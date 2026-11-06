@@ -150,6 +150,19 @@ test('timeline export: EDL, CSV, chapters, FCPXML and OTIO are well formed', () 
   const sources = [src(40, { name: 'cam & co', file: 'C:\\media\\cam a.mp4', video: { width: 1920, height: 1080 } }), src(40)];
   const clips = [{ id: 'a', sourceIndex: 0, start: 1, end: 5, label: 'Hello' }, { id: 'b', sourceIndex: 1, start: 10, end: 13, speed: 1.5 }, { id: 'c', sourceIndex: 0, start: 20, end: 24, transition: 'fade', transitionSeconds: 0.5 }];
   const options = { sections: [{ name: 'Part B', clip: 'b' }], markers: [{ time: 1, label: 'm' }], narration: '/v/voice.wav', narrationTrimStart: 2 };
+  const captionOptions = { ...options, captionOffset: 0.5, captions: [
+    { sourceIndex: 0, start: 1, end: 3, text: 'Opening' },
+    { sourceIndex: 1, start: 10, end: 13, text: 'Speed' },
+    { sourceIndex: 0, start: 20, end: 23.5, text: 'Finale' },
+  ] };
+  const srt = exportTimeline({ format: 'srt', clips, sources, options: captionOptions });
+  assert.equal(srt.extension, 'srt'); assert.equal(srt.mime, 'application/x-subrip');
+  assert.equal(srt.content, '1\n00:00:00,500 --> 00:00:02,500\nOpening\n\n2\n00:00:04,333 --> 00:00:06,000\nSpeed\n\n3\n00:00:06,000 --> 00:00:09,500\nFinale\n');
+  const vtt = exportTimeline({ format: 'vtt', clips, sources, options: captionOptions });
+  assert.equal(vtt.extension, 'vtt'); assert.equal(vtt.mime, 'text/vtt');
+  assert.equal(vtt.content, 'WEBVTT\n\n1\n00:00:00.500 --> 00:00:02.500\nOpening\n\n2\n00:00:04.333 --> 00:00:06.000\nSpeed\n\n3\n00:00:06.000 --> 00:00:09.500\nFinale\n');
+  assert.throws(() => exportTimeline({ format: 'srt', clips, sources, options }), /No captions are available/);
+  assert.throws(() => exportTimeline({ format: 'vtt', clips, sources, options }), /No captions are available/);
   assert.equal(timecode(3661.5, 30), '01:01:01:15');
   const edl = exportTimeline({ format: 'edl', clips, sources, options, name: 'Ünï', fps: 30 }).content;
   assert.equal(edl.split('\r\n').filter(l => /^\d{3} /.test(l)).length, 3);
@@ -212,6 +225,8 @@ test('0.8 tools: 46 tools, schemas validate, version gate, routes', async () => 
   validateArguments({ projectId: id, revision: 1, script: 'a b\nc d' }, schema('assemble'));
   validateArguments({ projectId: id, revision: 1, cameras: [0, 1], audioSource: 0 }, schema('multicam'));
   validateArguments({ projectId: id, format: 'otio', fps: 25 }, schema('export_timeline'));
+  validateArguments({ projectId: id, format: 'srt' }, schema('export_timeline'));
+  validateArguments({ projectId: id, format: 'vtt' }, schema('export_timeline'));
   validateArguments({ projectId: id, action: 'resolve', id: 'abcdef12', reply: 'ok' }, schema('comments'));
   validateArguments({ projectId: id, action: 'make', height: 540 }, schema('proxies'));
   validateArguments({ projectId: id, revision: 3, operations: [{ op: 'move_block', clips: ['a', 'b'], before: null }] }, schema('edit'));

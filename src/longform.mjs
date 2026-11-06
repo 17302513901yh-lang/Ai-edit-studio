@@ -1,9 +1,9 @@
 // Long-form editing helpers (pure): fit an edit to a length, search a project, build a rough cut
-// from a script, plan a multicam edit, and export the timeline for other NLEs (EDL, FCPXML, OTIO, CSV).
+// from a script, plan a multicam edit, and export EDL/FCPXML/OTIO/CSV/chapters/SRT/VTT.
 import { layout, totalDuration, mergeRanges, sectionSpans, applyOperations, LIMITS } from '../public/edit-ops.js';
 import { curvesFor, clipEnergy, highlights } from '../public/insights.js';
 import { findFillers, findPauses, wordsInEdit, bare } from '../public/transcript.js';
-import { mapCaptions } from '../public/captions.js';
+import { mapCaptions, toSrt, toVtt } from '../public/captions.js';
 import { sentences } from './clips.mjs';
 
 const STEP = 0.5;
@@ -255,6 +255,13 @@ const xml = v => String(v ?? '').replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '
 const fileUrl = f => `file://${f.startsWith('/') ? '' : '/'}${encodeURI(f.replaceAll('\\', '/'))}`;
 export function exportTimeline({ format, clips, sources, options = {}, name = 'Edit', fps = 30 }) {
   const rows = layout(clips), sections = sectionSpans(clips, options.sections ?? []);
+  if (format === 'srt' || format === 'vtt') {
+    const cues = mapCaptions(options.captions ?? [], clips, Number(options.captionOffset) || 0);
+    if (!cues.length) throw new Error('No captions are available for this edit. Add or import captions before exporting SRT or VTT.');
+    return format === 'srt'
+      ? { extension: 'srt', mime: 'application/x-subrip', content: toSrt(cues) }
+      : { extension: 'vtt', mime: 'text/vtt', content: toVtt(cues) };
+  }
   if (format === 'edl') {
     const lines = [`TITLE: ${name.replace(/[^\x20-\x7e]/g, '').slice(0, 60) || 'EDIT'}`, 'FCM: NON-DROP FRAME', ''];
     rows.forEach((r, i) => {
@@ -361,6 +368,6 @@ ${markers}
           { OTIO_SCHEMA: 'Clip.2', name: x.name, source_range: tr(x.trim, x.duration), media_references: { DEFAULT_MEDIA: { OTIO_SCHEMA: 'ExternalReference.1', target_url: fileUrl(x.file), available_range: null } }, active_media_reference_key: 'DEFAULT_MEDIA', effects: [], markers: [], enabled: true }] }))] } };
     return { extension: 'otio', mime: 'application/json', content: JSON.stringify(doc, null, 2) };
   }
-  throw new Error('format: edl, fcpxml, otio, csv or chapters.');
+  throw new Error('format: edl, fcpxml, otio, csv, chapters, srt or vtt.');
 }
 export { r3 };
