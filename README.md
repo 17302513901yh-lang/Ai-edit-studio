@@ -1,4 +1,14 @@
+<p align="center"><img src="docs/site/assets/icon.png" alt="AI Edit Studio icon" width="96" height="96"></p>
+
 # AI Edit Studio — Director 0.11
+<p align="center"><b>Your footage. Your story. Your studio.</b><br>A local-first video editor for creators and their AI agents.</p>
+<p align="center"><a href="https://laaielichter.github.io/Ai-edit-studio/">Project website</a> · <a href="#install-and-start-windows-beta">Get started</a> · <a href="docs/INTEGRATIONS.md">Connect your agent</a> · <a href="CONTRIBUTING.md">Contribute</a></p>
+
+[![Project website](https://img.shields.io/badge/Project_website-Visit-ff603d?style=flat-square)](https://laaielichter.github.io/Ai-edit-studio/) [![CI](https://github.com/laaielichter/Ai-edit-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/laaielichter/Ai-edit-studio/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-202220?style=flat-square)](LICENSE)
+
+<a href="https://laaielichter.github.io/Ai-edit-studio/"><img src="docs/site/assets/social-card.png" alt="AI Edit Studio — local-first editing for creators and their AI agents" width="1200"></a>
+
+## One studio. Your final cut.
 
 A **local-first video editor** for creators, game developers and their agents. One engine with a
 pro timeline for people and the same 59 tools for agents (MCP, HTTP/OpenAPI, CLI). Your footage never
@@ -156,6 +166,11 @@ The server binds to `127.0.0.1:32146` only (`GAME_TRAILER_STUDIO_PORT` to change
   Formats the browser cannot play (e.g. some MKV/HEVC) still edit fine; watch the rendered preview.
 - SDR / H.264 output; 4K is Lanczos upscaling, not AI detail.
 - Beta: not yet verified by many outside users. Bug reports are welcome as GitHub issues.
+
+## Made in the open
+
+Built and maintained by [laaielichter](https://github.com/laaielichter). Contributions and real-world feedback are welcome.
+If the studio is useful to you, a GitHub star is appreciated — always optional.
 
 ## Development
 
