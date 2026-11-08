@@ -15,14 +15,21 @@
 - **Agents hear about music and story documents**: the MCP instructions and `studio_schema` now name `studio_music`, `studio_guide {topic:"story"}` and `studio_apply` (#36).
 - **TROUBLESHOOTING entries** for `HDR_NOT_SUPPORTED`, `SOURCE_CHANGED`, `MEDIA_TOO_LONG` and `ENCODER_MISSING`, also in the troubleshoot skill, with a test that every documented error code exists in the code (#37).
 - **Up-to-date tool count and version**: the npm description, INSTALL.md, the OpenAI example, the editor and the launch page say 59 tools and Director 0.11, and a test keeps them in step with the code (#34).
+- **A request file must hold a JSON object**: `--request` with `null`, an array, a string or a number now answers `INVALID_JSON` instead of crashing or failing later (#28).
+- **Captions as SRT and WebVTT from the timeline**: `studio_export_timeline {format:"srt"|"vtt"}` follows cuts, speed changes and caption offsets, with export buttons in the editor (#33).
+- **More SRT files import**: one-digit hours (`0:00:01,000`) and position coordinates after the end time are accepted (#43).
+- **`bars` scene for story documents**: up to eight bars grow one after another to show a comparison, with an optional highlight and a `<id>.done` event (#42).
+- **VTT transcripts decode HTML entities**: `&amp;`, `&lt;`, `&gt;`, `&quot;`, `&#39;`, `&nbsp;` and numeric forms become the characters they stand for, decoded once after the tags are stripped (#40).
+- **MP4 chapters**: full renders embed one chapter per section (or labelled marker), with the same times as the chapters export plus any brand intro; `options.chapters:"off"` turns it off and previews and range renders get none (#41).
+- **`node cli.mjs studio <tool> --help` and typed flags**: every top-level tool argument works as a kebab-case flag (`--timeout-seconds 30`, `--export-id`), converted from the tool's schema, and an unknown flag is refused with the list of valid ones (#44).
 
 ### Thanks
 
-- @bfs2021 for the generated help (#13), the long SRT/VTT transcript import (#20) and the `=` flag fix (#27).
+- @bfs2021 for the generated help (#13), the long SRT/VTT transcript import (#20), the `=` flag fix (#27) and the VTT entity decoding (#40).
 - @wized2 for the clearer file errors (#14) and the named probe failures (#19).
-- @tnalbant for the accent-folding brand kit ids that keep old kits readable (#29).
-- @DaniLlano for the chapter fix (#30), the preview shapes (#31), the safer speech setup (#32), OTIO transitions (#35) and the music and story pointers for agents (#36).
-- @Aaqibhafeezkhan for the troubleshooting entries and their error-code test (#37) and the tool-count and version sync with its docs test (#34).
+- @tnalbant for the accent-folding brand kit ids that keep old kits readable (#29) and the request-file check (#28).
+- @DaniLlano for the chapter fix (#30), the preview shapes (#31), the safer speech setup (#32), OTIO transitions (#35), the music and story pointers for agents (#36), the SRT time fix (#43), the `bars` scene (#42), MP4 chapters (#41) and the schema-derived CLI flags with per-tool help (#44).
+- @Aaqibhafeezkhan for the troubleshooting entries and their error-code test (#37), the tool-count and version sync with its docs test (#34) and the SRT/VTT timeline export (#33).
 
 ## 0.11.0 — story documents
 
