@@ -1,0 +1,40 @@
+name: Bug report
+description: Something does not work as expected
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. ...\n2. ...\n3. ..."
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: "the version in package.json, or the one the editor shows"
+  - type: input
+    id: setup
+    attributes:
+      label: Agent and operating system
+      placeholder: "e.g. Claude Code on Windows 11, the editor in Chrome on macOS"
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of node cli.mjs doctor
+      description: Remove anything private first, such as file paths you do not want to share.
+      render: shell
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error code, logs or screenshots
+      description: The error code (for example FILE_NOT_FOUND) helps most.
+      render: shell

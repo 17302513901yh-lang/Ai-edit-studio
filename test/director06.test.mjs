@@ -168,6 +168,20 @@ test('publish: chapters, drafts, hashtags and frame quality', () => {
   assert.equal(frameQuality(Buffer.alloc(160 * 90, 5)).mean, 5);
 });
 
+test('publish: a long brief is shortened so the call to action and the hashtags still fit', () => {
+  const d = metadataDrafts({ title: 'T', brief: 'word '.repeat(100), cta: 'Wishlist now', tags: ['gamedev', 'indie'], platforms: ['x', 'steam'] });
+  assert.ok(d.x.description.length <= 280);
+  assert.ok(d.x.description.startsWith('word word'), d.x.description.slice(0, 20));
+  assert.match(d.x.description, /…/);
+  assert.ok(d.x.description.endsWith('Wishlist now\n\n#gamedev #indie'), d.x.description.slice(-40));
+  assert.deepEqual(d.x.hashtags, ['#gamedev', '#indie']);
+  const short = metadataDrafts({ title: 'T', brief: 'Short brief.', cta: 'Wishlist now', tags: ['gamedev'], platforms: ['x'] });
+  assert.equal(short.x.description, 'Short brief.\n\nWishlist now\n\n#gamedev');
+  const words = metadataDrafts({ title: 'T', brief: 'bravo '.repeat(60), platforms: ['steam'] });
+  assert.ok(words.steam.description.length <= 300);
+  assert.ok(words.steam.description.endsWith('bravo…'), words.steam.description.slice(-12));
+});
+
 test('brand colours stay numeric in filters', () => {
   assert.deepEqual(filterColors({ primary: '#ff0000', accent: 'red;drawtext', text: undefined }), { primary: '0xFF0000', accent: '0xF7CF72', text: '0xFFFFFF' });
   assert.match(captionDrawStyle('box', 'low', 1920, false, { primary: '#123456' }), /boxcolor=0x123456@0.72/);
@@ -175,6 +189,16 @@ test('brand colours stay numeric in filters', () => {
   assert.match(textDrawStyle('note', 'center', 1920, false, { accent: '#00FF00' }), /fontcolor=0x00FF00/);
   const graph = buildFilter({ actualDuration: 2, clips: [{ source: 'a.mp4', start: 0, end: 2, duration: 2, speed: 1, hasAudio: false }] }, { width: 1920, height: 1080, fps: 30, logoInputIndex: 1, logoPosition: 'bottom-right', logoOpacity: 0.5 });
   assert.match(graph, /colorchannelmixer=aa=0\.500/); assert.match(graph, /overlay=x=W-w-W\*0\.04:y=H-h-H\*0\.05/);
+});
+
+test('publish: a first chapter before 10 s moves to 0:00 instead of getting an Intro', () => {
+  const clips = [{ sourceIndex: 0, start: 0, end: 120 }];
+  const early = chapters(clips, { markers: [{ time: 4, label: 'Setup' }, { time: 20, label: 'Fight' }, { time: 40, label: 'Boss' }] });
+  assert.deepEqual(early.map(c => c.line), ['00:00 Setup', '00:20 Fight', '00:40 Boss']);
+  assert.ok(early.every((c, i) => i === 0 || c.time - early[i - 1].time >= 10));
+  const late = chapters(clips, { markers: [{ time: 12, label: 'Setup' }, { time: 30, label: 'Fight' }, { time: 50, label: 'Boss' }] });
+  assert.deepEqual(late.map(c => c.line), ['00:00 Intro', '00:12 Setup', '00:30 Fight', '00:50 Boss']);
+  assert.ok(late.every((c, i) => i === 0 || c.time - late[i - 1].time >= 10));
 });
 
 test('Director 0.6 agent tools validate and route', async () => {

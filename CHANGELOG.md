@@ -2,11 +2,38 @@
 
 ## Unreleased
 
-- **HTTP API: 404 for things that do not exist.** An unknown project, revision, export, section, comment, build, brand, style, recipe, run or tool now answers 404 instead of 400, so HTTP clients can tell a missing thing from a bad request (#12).
+- **Chinese and Japanese clips follow sentence boundaries**: the clip finder recognises full-width sentence endings, including those before a closing quote or parenthesis (#51).
+- **`node cli.mjs help` lists every studio command**, built from the tool list, so `music`, `apply` and `guide` show up and new tools appear by themselves (#13).
+- **Clearer file errors**: a rejected file now names the path you passed and the check that failed (not a regular file, the extension with the allowed list, or the size against the limit) (#14).
+- **A damaged or non-media file is named**: when ffprobe cannot read a video, still or audio file, the error is `UNSUPPORTED_MEDIA` with the file and ffprobe's reason, instead of "Process exited with code 1" (#19).
+- **Long transcripts import**: `studio_transcript` import and the FFmpeg-whisper path no longer stop at the 300-cue caption limit, and WebVTT files with header lines, cue settings, cue ids, short `mm:ss.ttt` times or `NOTE`/`STYLE` blocks are read correctly (#20).
+- **CLI flag values keep every `=`**: `--title=Score=100` now gives `Score=100` instead of `Score` (#27).
+- **Brand kit ids fold accents**: `Café Noir` becomes `cafe-noir` and `Zoë` becomes `zoe`; kits saved under the old id are still found, and a name without Latin letters or digits says why it is refused (#29).
+- **Brand kits accept shorthand hex colours** such as `#ABC` and save them as six-digit colours (`#AABBCC`) (#49).
+- **YouTube chapters stay valid**: a first chapter before 10 s moves to 0:00 instead of getting an "Intro" a few seconds before it (#30).
+- **The right preview shape for every social size**: `square720`, `portrait1440` and the other sizes get a square or 4:5 preview instead of 9:16 (#31).
+- **`speech-setup` checks the model name first**: a typo gives `INVALID_MODEL` with the common names before anything is downloaded, and a failed download no longer leaves a `.partial` file (#32).
+- **Transitions in the OTIO export**: fades become `SMPTE_Dissolve` and other transitions `Custom_Transition` items, in whole frames, so they survive the hand-off to Resolve and other editors (#35).
+- **Agents hear about music and story documents**: the MCP instructions and `studio_schema` now name `studio_music`, `studio_guide {topic:"story"}` and `studio_apply` (#36).
+- **TROUBLESHOOTING entries** for `HDR_NOT_SUPPORTED`, `SOURCE_CHANGED`, `MEDIA_TOO_LONG` and `ENCODER_MISSING`, also in the troubleshoot skill, with a test that every documented error code exists in the code (#37).
+- **Up-to-date tool count and version**: the npm description, INSTALL.md, the OpenAI example, the editor and the launch page say 59 tools and Director 0.11, and a test keeps them in step with the code (#34).
+- **A request file must hold a JSON object**: `--request` with `null`, an array, a string or a number now answers `INVALID_JSON` instead of crashing or failing later (#28).
+- **Captions as SRT and WebVTT from the timeline**: `studio_export_timeline {format:"srt"|"vtt"}` follows cuts, speed changes and caption offsets, with export buttons in the editor (#33).
+- **More SRT files import**: one-digit hours (`0:00:01,000`) and position coordinates after the end time are accepted (#43).
+- **`bars` scene for story documents**: up to eight bars grow one after another to show a comparison, with an optional highlight and a `<id>.done` event (#42).
+- **VTT transcripts decode HTML entities**: `&amp;`, `&lt;`, `&gt;`, `&quot;`, `&#39;`, `&nbsp;` and numeric forms become the characters they stand for, decoded once after the tags are stripped (#40).
+- **MP4 chapters**: full renders embed one chapter per section (or labelled marker), with the same times as the chapters export plus any brand intro; `options.chapters:"off"` turns it off and previews and range renders get none (#41).
+- **`node cli.mjs studio <tool> --help` and typed flags**: every top-level tool argument works as a kebab-case flag (`--timeout-seconds 30`, `--export-id`), converted from the tool's schema, and an unknown flag is refused with the list of valid ones (#44).
+- **Platform drafts keep the call to action and hashtags**: a long brief is shortened on a whole word to make room, instead of the end of the draft being cut off (#50).
 
 ### Thanks
 
-- @wized2 for the 404 status codes (#12), the first outside contribution to AI Edit Studio.
+- @bfs2021 for the generated help (#13), the long SRT/VTT transcript import (#20), the `=` flag fix (#27) the VTT entity decoding (#40) and the brief that makes room for the call to action and hashtags (#50).
+- @wized2 for the clearer file errors (#14) and the named probe failures (#19).
+- @tnalbant for the accent-folding brand kit ids that keep old kits readable (#29) and the request-file check (#28).
+- @DaniLlano for the chapter fix (#30), the preview shapes (#31), the safer speech setup (#32), OTIO transitions (#35), the music and story pointers for agents (#36), the SRT time fix (#43), the `bars` scene (#42), MP4 chapters (#41) and the schema-derived CLI flags with per-tool help (#44).
+- @Aaqibhafeezkhan for the troubleshooting entries and their error-code test (#37), the tool-count and version sync with its docs test (#34) and the SRT/VTT timeline export (#33).
+- @Daiyuanranfeng for the Chinese and Japanese sentence endings in the clip finder (#51) and the shorthand hex colours for brand kits (#49).
 
 ## 0.11.0 — story documents
 
@@ -15,6 +42,11 @@
   events, sfx, drops, on-screen text, delivery sizes and safe areas. `dryRun` returns the schedule and warnings; a build
   runs in the background (`{action:"status", buildId}`) and ends in an ordinary project. Scenes render locally with
   FFmpeg + libass; unchanged scenes are reused.
+- **HTTP API: 404 for things that do not exist.** An unknown project, revision, export, section, comment, build, brand, style, recipe, run or tool now answers 404 instead of 400, so HTTP clients can tell a missing thing from a bad request (#12).
+
+### Thanks
+
+- @wized2 for the 404 status codes (#12), the first outside contribution to AI Edit Studio.
 
 ## Unreleased — every output size, npm package, open source
 

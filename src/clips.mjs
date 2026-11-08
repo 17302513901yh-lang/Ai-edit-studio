@@ -3,6 +3,7 @@
 import { curvesFor } from '../public/insights.js';
 
 const STEP = 0.5;
+const SENTENCE_END = /[.!?…。！？]["”')\]」』）]?$/;
 const r3 = n => Math.round(n * 1000) / 1000;
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
 function mean(curve, a, b, key = 'energy') {
@@ -11,14 +12,14 @@ function mean(curve, a, b, key = 'energy') {
   return n ? s / n : 0;
 }
 
-/** Sentence spans from words: break after . ! ? … or on a pause ≥ 0.7 s. */
+/** Sentence spans from words: break at sentence-ending punctuation or on a pause ≥ 0.7 s. */
 export function sentences(words) {
   const out = []; let cur = null;
   words.forEach((w, i) => {
     if (cur && w.start - words[i - 1].end >= 0.7) { out.push(cur); cur = null; }
     if (!cur) cur = { from: i, to: i, start: w.start, end: w.end };
     cur.to = i; cur.end = w.end;
-    if (/[.!?…]["”')\]]?$/.test(w.text)) { out.push(cur); cur = null; }
+    if (SENTENCE_END.test(w.text)) { out.push(cur); cur = null; }
   });
   if (cur) out.push(cur);
   return out;
@@ -60,7 +61,7 @@ export function findClips({ sources, transcripts = {}, count = 5, minSeconds = 1
           const text = words.slice(spans[a].from, spans[b].to + 1).map(w => w.text).join(' ');
           const gaps = spans.slice(a + 1, b + 1).reduce((s, sp, k) => s + Math.max(0, sp.start - spans[a + k].end - 0.4), 0);
           candidates.push({ sourceIndex, start: r3(start), end: r3(end), words: n, rate, firstText, text, dead: gaps / d,
-            complete: /[.!?…]["”')\]]?$/.test(words[spans[b].to].text) ? 1 : 0.6, hookBonus: /[?!]/.test(firstText) ? 0.08 : 0 });
+            complete: SENTENCE_END.test(words[spans[b].to].text) ? 1 : 0.6, hookBonus: /[?!]/.test(firstText) ? 0.08 : 0 });
         }
       }
     }

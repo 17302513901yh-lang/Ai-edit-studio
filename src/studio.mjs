@@ -11,12 +11,12 @@ import { renderTrailer, renderStems, ensureSfxLibrary, filterPath, PREVIEW_SIZES
 import { quietRanges, BUILTIN_LUTS, cubeText, validateCube, autoTarget, colorCorrection, averageStats, musicFitPlan, SFX, autoSfx, normalizeSfx, audioRepairAdvice, normalizeAudioRepair, levelMatch, emphasisTimes, autoBrollPlan } from './polish.mjs';
 import { runProcess } from './process.mjs';
 import { proposeSilenceCuts } from './silence.mjs';
-import { normalizeOptions, validateClips, proposeEdit, EXPORT_PRESETS, DEFAULT_EXPORT_FORMATS, MAX_EXPORT_FORMATS, validateCaptionSources, validateOverlaySources } from './editing.mjs';
+import { normalizeOptions, validateClips, proposeEdit, EXPORT_PRESETS, DEFAULT_EXPORT_FORMATS, MAX_EXPORT_FORMATS, validateCaptionSources, validateOverlaySources, previewShape } from './editing.mjs';
 import { applyOperations, coreClips, diffEdits, EditError, LIMITS, layout } from '../public/edit-ops.js';
 import { analyzeMusicFile, timelineBeats } from './beats.mjs';
 import { reviewEdit, describeTimeline, curvesFor, highlights as findHighlights, hookScore } from '../public/insights.js';
 import { templateOptions } from './templates.mjs';
-import { parseSrt } from '../public/captions.js';
+import { parseSrt, parseSrtCues, parseVttCues } from '../public/captions.js';
 import { buildAutoEdit, PLATFORMS } from './autoedit.mjs';
 import { transcribeFile, speechStatus, parseWhisperJson } from './transcribe.mjs';
 import { normalizeWords, wordsFromSegments, findFillers, wordRanges, findPauses, matchPhrase, wordsInEdit, captionsFromEdit, transcriptText } from '../public/transcript.js';
@@ -109,15 +109,26 @@ export async function listProjects() {
   }
   return records.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
-async function checkedFile(file, extensions, limit = Infinity) {
+export async function checkedFile(file, extensions, limit = Infinity) {
   if (typeof file !== 'string' || !path.isAbsolute(file) || file.includes('\0')) {
-    throw new StudioError('LOCAL_FILE_REQUIRED', 'Choose an absolute local file path.');
+    throw new StudioError('LOCAL_FILE_REQUIRED', `Choose an absolute local file path (got ${typeof file === 'string' ? JSON.stringify(file) : String(file)}).`);
   }
-  if (/^(?:\\\\|\/\/)/.test(file)) throw new StudioError('LOCAL_FILE_REQUIRED', 'Network paths are not allowed in this local beta.');
-  const real = await fs.realpath(file).catch(() => { throw new StudioError('FILE_NOT_FOUND', 'File not found.'); });
+  if (/^(?:\\\\|\/\/)/.test(file)) throw new StudioError('LOCAL_FILE_REQUIRED', `Network paths are not allowed in this local beta: ${file}`);
+  const real = await fs.realpath(file).catch(() => { throw new StudioError('FILE_NOT_FOUND', `File not found: ${file}`); });
   const info = await fs.lstat(real);
-  if (!info.isFile() || info.isSymbolicLink() || !extensions.includes(path.extname(real).toLowerCase()) || info.size > limit) {
-    throw new StudioError('INVALID_MEDIA', 'This file type or file size is not supported.');
+  const ext = path.extname(real).toLowerCase();
+  // Name the path the caller gave (file), not realpath(), so messages match what the agent sent
+  // and stay stable on Windows where short 8.3 tmp paths differ from the long form.
+  if (!info.isFile() || info.isSymbolicLink()) {
+    throw new StudioError('INVALID_MEDIA', `Not a regular file: ${file}`);
+  }
+  if (!extensions.includes(ext)) {
+    throw new StudioError('INVALID_MEDIA', `Unsupported extension for ${file}: ${ext || '(none)'}. Allowed: ${extensions.join(', ')}`);
+  }
+  if (info.size > limit) {
+    const sizeMiB = (info.size / 1024 ** 2).toFixed(1);
+    const limitMiB = (limit / 1024 ** 2).toFixed(0);
+    throw new StudioError('INVALID_MEDIA', `File too large: ${file} is ${sizeMiB} MiB, limit is ${limitMiB} MiB`);
   }
   return { file: real, size: info.size, mtimeMs: info.mtimeMs };
 }
@@ -316,7 +327,7 @@ async function renderFormats(current, formats, preview, previewFormat = 'landsca
     const preset = preview ? { resolution: PREVIEW_SIZES[previewFormat] ?? '1280x720', fps: 30, vertical: previewFormat !== 'landscape' } : EXPORT_PRESETS[format];
     current.message = `Rendering ${override?.label ?? (preview ? 'preview' : preset.name)} (${i + 1}/${formats.length})`;
     const rendered = await renderTrailer(plan, {
-      jobRoot, output: path.join(jobRoot, `${format}.mp4`), ...preset, ...options, ...(brand ? brandRenderOptions(brand, options) : {}),
+            jobRoot, output: path.join(jobRoot, `${format}.mp4`), ...preset, ...options, chapters: override ? 'off' : options.chapters, ...(brand ? brandRenderOptions(brand, options) : {}),
       overlayClips: (options.overlays ?? []).map(o => ({ ...o, file: current.sources[o.sourceIndex]?.file, hasAudio: Boolean(current.sources[o.sourceIndex]?.hasAudio) })),
       segmented: options.segmentedRender ?? 'auto', cacheDir: path.join(folder(id), 'render-cache'),
       preview, software: process.env.GAME_TRAILER_STUDIO_SOFTWARE === '1',
@@ -866,7 +877,7 @@ export async function importTranscript(id, request = {}) {
       else throw new StudioError('INVALID_TRANSCRIPT', 'Unknown JSON transcript: expected whisper.cpp -ojf output, {words:[...]}, or {segments:[...]}');
     } else {
       let cues;
-      try { cues = parseSrt(text.replace(/^WEBVTT[^\n]*\n/, '').replace(/(\d\d:\d\d:\d\d)\.(\d\d\d)/g, '$1,$2').replace(/(^|\n)(\d\d:\d\d)\.(\d\d\d) -->/g, '$100:$2,$3 -->'), index); }
+      try { cues = /\.vtt$/i.test(file.file) ? parseVttCues(text, index) : parseSrtCues(text, index); }
       catch (e) { throw new StudioError('INVALID_TRANSCRIPT', e.message); }
       result = { engine: 'import-srt', words: wordsFromSegments(cues), segments: cues, wordTiming: 'estimated' };
     }
@@ -1076,8 +1087,7 @@ export async function autoEditProject(id, request = {}) {
     await persist(project);
     if (request.render || request.preview) {
       project.status = request.preview ? 'previewing' : 'rendering';
-      const first = EXPORT_PRESETS[formats[0]];
-      const previewFormat = !first?.vertical ? 'landscape' : formats[0] === 'square' ? 'square' : formats[0] === 'portrait' ? 'portrait' : 'vertical';
+      const previewFormat = previewShape(formats[0]);
       const outputs = await renderFormats(project, request.preview ? ['preview'] : formats, Boolean(request.preview), previewFormat);
       project.autoEdit.exports = outputs.map(o => ({ id: o.id, format: o.format, output: o.output, duration: o.duration }));
     }
@@ -1435,7 +1445,7 @@ export async function exportTimelineProject(id, request = {}) {
   const file = path.join(dir, `${project.name.replace(/[^\p{L}\p{N} _-]/gu, '').trim().slice(0, 40) || 'edit'} rev${project.revision}.${out.extension}`);
   await fs.writeFile(file, out.content, 'utf8');
   return { format: request.format ?? 'edl', fps, file, mime: out.mime, bytes: Buffer.byteLength(out.content), content: out.content.length > 200_000 ? `${out.content.slice(0, 200_000)}\n…` : out.content,
-    note: { edl: 'CMX3600 for Premiere, Resolve and Avid (cuts, speed via M2; transitions as comments).', fcpxml: 'FCPXML 1.9 for Final Cut Pro and DaVinci Resolve.', otio: 'OpenTimelineIO for Resolve, Premiere (via plugin) and pipelines.', csv: 'Shot list for spreadsheets.', chapters: 'YouTube chapters from sections or labelled markers.' }[request.format ?? 'edl'] };
+    note: { edl: 'CMX3600 for Premiere, Resolve and Avid (cuts, speed via M2; transitions as comments).', fcpxml: 'FCPXML 1.9 for Final Cut Pro and DaVinci Resolve.', otio: 'OpenTimelineIO for Resolve, Premiere (via plugin) and pipelines (cuts, speed and transitions).', srt: 'Timeline-timed SubRip captions mapped through cuts and clip speed, including caption offset.', vtt: 'Timeline-timed WebVTT captions mapped through cuts and clip speed, including caption offset.', csv: 'Shot list for spreadsheets.', chapters: 'YouTube chapters from sections or labelled markers.' }[request.format ?? 'edl'] };
 }
 
 /** Review notes pinned to the edit (anchored to a shot so they move with it). Not part of the edit history. */

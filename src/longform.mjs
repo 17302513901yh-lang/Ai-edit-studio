@@ -1,9 +1,9 @@
 // Long-form editing helpers (pure): fit an edit to a length, search a project, build a rough cut
-// from a script, plan a multicam edit, and export the timeline for other NLEs (EDL, FCPXML, OTIO, CSV).
+// from a script, plan a multicam edit, and export EDL/FCPXML/OTIO/CSV/chapters/SRT/VTT.
 import { layout, totalDuration, mergeRanges, sectionSpans, applyOperations, LIMITS } from '../public/edit-ops.js';
 import { curvesFor, clipEnergy, highlights } from '../public/insights.js';
 import { findFillers, findPauses, wordsInEdit, bare } from '../public/transcript.js';
-import { mapCaptions } from '../public/captions.js';
+import { mapCaptions, toSrt, toVtt } from '../public/captions.js';
 import { sentences } from './clips.mjs';
 
 const STEP = 0.5;
@@ -253,8 +253,35 @@ export function timecode(seconds, fps) {
 }
 const xml = v => String(v ?? '').replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' }[c]));
 const fileUrl = f => `file://${f.startsWith('/') ? '' : '/'}${encodeURI(f.replaceAll('\\', '/'))}`;
+/** Chapters shared by the chapters export and the MP4 render: sections first, else labelled markers.
+ * `offset` is the length of a brand intro in front of the programme; the first chapter always starts at 0:00.
+ * Marks at or past the end of the edit are dropped and each time gives one chapter, so 0 <= start < end <= programme end. */
+export function chapterMarks(clips, options = {}, offset = 0) {
+  const sections = sectionSpans(clips, options.sections ?? []);
+  const length = r3(totalDuration(clips));
+  const marks = (sections.length ? sections.map(s => ({ t: s.start, n: s.name })) : (options.markers ?? []).filter(m => m.label).map(m => ({ t: m.time, n: m.label })))
+    .filter(m => r3(m.t) < length)
+    .sort((a, b) => a.t - b.t)
+    .filter((m, i, all) => !i || r3(m.t) > r3(all[i - 1].t));
+  if (!marks.length) return [];
+  if (marks[0].t >= 1) marks.unshift({ t: 0, n: marks.some(m => m.n.toLowerCase() === 'intro') ? 'Start' : 'Intro' }); else marks[0].t = 0; // YouTube needs the first chapter at 0:00
+  const total = length + offset;
+  return marks.map((m, i) => ({ start: i ? r3(m.t + offset) : 0, end: r3(marks[i + 1] ? marks[i + 1].t + offset : total), title: m.n })).filter(c => c.start < c.end);
+}
+const escapeMeta = s => String(s).replace(/[=;#\\\n]/g, c => `\\${c}`);
+/** ffmetadata text for FFmpeg's -map_chapters (millisecond timebase). */
+export function chapterMetadata(chapters) {
+  return ';FFMETADATA1\n' + chapters.map(c => `[CHAPTER]\nTIMEBASE=1/1000\nSTART=${Math.round(c.start * 1000)}\nEND=${Math.round(c.end * 1000)}\ntitle=${escapeMeta(c.title)}\n`).join('');
+}
 export function exportTimeline({ format, clips, sources, options = {}, name = 'Edit', fps = 30 }) {
   const rows = layout(clips), sections = sectionSpans(clips, options.sections ?? []);
+  if (format === 'srt' || format === 'vtt') {
+    const cues = mapCaptions(options.captions ?? [], clips, Number(options.captionOffset) || 0);
+    if (!cues.length) throw new Error('No captions are available for this edit. Add or import captions before exporting SRT or VTT.');
+    return format === 'srt'
+      ? { extension: 'srt', mime: 'application/x-subrip', content: toSrt(cues) }
+      : { extension: 'vtt', mime: 'text/vtt', content: toVtt(cues) };
+  }
   if (format === 'edl') {
     const lines = [`TITLE: ${name.replace(/[^\x20-\x7e]/g, '').slice(0, 60) || 'EDIT'}`, 'FCM: NON-DROP FRAME', ''];
     rows.forEach((r, i) => {
@@ -278,12 +305,12 @@ export function exportTimeline({ format, clips, sources, options = {}, name = 'E
     const body = rows.map((r, i) => [i + 1, sec(i), r.label ?? '', sources[r.sourceIndex]?.name, r.start.toFixed(3), r.end.toFixed(3), r.visibleStart.toFixed(3), r.visibleEnd.toFixed(3), (r.visibleEnd - r.visibleStart).toFixed(3), r.speed ?? 1, r.transition ?? 'cut'].map(q).join(','));
     return { extension: 'csv', mime: 'text/csv', content: [head.join(','), ...body].join('\r\n') };
   }
-  if (format === 'chapters') {
-    const marks = (sections.length ? sections.map(s => ({ t: s.start, n: s.name })) : (options.markers ?? []).filter(m => m.label).map(m => ({ t: m.time, n: m.label }))).sort((a, b) => a.t - b.t);
-    if (!marks.length || marks[0].t >= 1) marks.unshift({ t: 0, n: marks.some(m => m.n.toLowerCase() === 'intro') ? 'Start' : 'Intro' }); else marks[0].t = 0; // YouTube needs the first chapter at 0:00
+    if (format === 'chapters') {
+    const marks = chapterMarks(clips, options);
+    if (!marks.length) marks.push({ start: 0, title: 'Intro' });
     const long = totalDuration(clips) >= 3600;
     const clock = t => (long ? `${Math.floor(t / 3600)}:${pad2(Math.floor(t / 60) % 60)}` : pad2(Math.floor(t / 60))) + `:${pad2(Math.floor(t % 60))}`;
-    return { extension: 'txt', mime: 'text/plain', content: marks.map(m => `${clock(m.t)} ${m.n}`).join('\n') };
+    return { extension: 'txt', mime: 'text/plain', content: marks.map(m => `${clock(m.start)} ${m.title}`).join('\n') };
   }
   // Voice-over / multicam sound and music as separate audio (FCPXML connected clips, OTIO audio track).
   const total = totalDuration(clips);
@@ -332,12 +359,28 @@ ${markers}
   if (format === 'otio') {
     const rt = s => ({ OTIO_SCHEMA: 'RationalTime.1', rate: fps, value: frames(s) });
     const tr = (a, d) => ({ OTIO_SCHEMA: 'TimeRange.1', start_time: rt(a), duration: rt(d) });
-    const children = rows.map(r => ({
+    const clipItems = rows.map(r => ({
       OTIO_SCHEMA: 'Clip.2', name: r.label || sources[r.sourceIndex]?.name || 'clip', metadata: { aiEditStudio: { id: r.id, speed: r.speed ?? 1, transition: r.transition ?? 'cut' } },
       source_range: tr(r.start + (r.visibleStart - r.timelineStart) * (r.speed || 1), (r.visibleEnd - r.visibleStart) * (r.speed || 1)),
       media_references: { DEFAULT_MEDIA: { OTIO_SCHEMA: 'ExternalReference.1', target_url: fileUrl(sources[r.sourceIndex]?.file ?? ''), available_range: tr(0, sources[r.sourceIndex]?.duration ?? 0) } },
       active_media_reference_key: 'DEFAULT_MEDIA', effects: [], markers: [], enabled: true,
     }));
+    // A transition sits between two clips and takes no track time: each side uses half the overlap, in whole frames.
+    const rtFrames = value => ({ OTIO_SCHEMA: 'RationalTime.1', rate: fps, value });
+    const children = [];
+    let headUsed = 0; // frames the transition before the previous clip already takes from that clip
+    rows.forEach((r, i) => {
+      const half = Math.round(r.overlapIn / 2 * fps);
+      const inFrames = i > 0 ? Math.min(half, Math.max(0, clipItems[i - 1].source_range.duration.value - headUsed)) : 0;
+      const outFrames = Math.min(half, clipItems[i].source_range.duration.value);
+      const cut = i > 0 && inFrames + outFrames > 0;
+      if (cut) children.push({
+        OTIO_SCHEMA: 'Transition.1', name: r.transition, transition_type: r.transition === 'fade' ? 'SMPTE_Dissolve' : 'Custom_Transition',
+        in_offset: rtFrames(inFrames), out_offset: rtFrames(outFrames), metadata: { aiEditStudio: { transition: r.transition, seconds: r.overlapIn } },
+      });
+      headUsed = cut ? outFrames : 0;
+      children.push(clipItems[i]);
+    });
     const doc = { OTIO_SCHEMA: 'Timeline.1', name, global_start_time: rt(0), metadata: {},
       tracks: { OTIO_SCHEMA: 'Stack.1', name: 'tracks', children: [{ OTIO_SCHEMA: 'Track.1', name: 'V1', kind: 'Video', children, markers: (options.markers ?? []).map(m => ({ OTIO_SCHEMA: 'Marker.2', name: m.label ?? '', marked_range: tr(m.time, 0), color: (m.color ?? 'yellow').toUpperCase() })) },
         ...extra.map((x, k) => ({ OTIO_SCHEMA: 'Track.1', name: `A${k + 1} ${x.name}`, kind: 'Audio', markers: [], children: [
@@ -345,6 +388,6 @@ ${markers}
           { OTIO_SCHEMA: 'Clip.2', name: x.name, source_range: tr(x.trim, x.duration), media_references: { DEFAULT_MEDIA: { OTIO_SCHEMA: 'ExternalReference.1', target_url: fileUrl(x.file), available_range: null } }, active_media_reference_key: 'DEFAULT_MEDIA', effects: [], markers: [], enabled: true }] }))] } };
     return { extension: 'otio', mime: 'application/json', content: JSON.stringify(doc, null, 2) };
   }
-  throw new Error('format: edl, fcpxml, otio, csv or chapters.');
+  throw new Error('format: edl, fcpxml, otio, csv, chapters, srt or vtt.');
 }
 export { r3 };

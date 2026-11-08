@@ -4,12 +4,12 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark"><meta name="theme-color" content="#0c0f11">
   <title>AI Edit Studio — edit with your hands and with your agent</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%23e3ef9f%22/%3E%3Cpath d=%22M12 9l11 7-11 7z%22 fill=%22%231a241b%22/%3E%3C/svg%3E"><link rel="stylesheet" href="studio.css"><script src="studio.js" type="module"></script>
+  <link rel="icon" type="image/png" href="brand/icon.png"><link rel="apple-touch-icon" href="brand/icon.png"><link rel="stylesheet" href="studio.css"><script src="studio.js" type="module"></script>
 </head>
 <body>
 <a class="skip" href="#app">Skip to the editor</a>
 <header class="topbar">
-  <a class="brand" href="/" title="Home"><span class="mark" aria-hidden="true">▸</span><span class="brand-name">AI EDIT <b>STUDIO</b></span><small>DIRECTOR 0.9</small></a>
+  <a class="brand" href="/" title="Home"><span class="mark" aria-hidden="true">▸</span><span class="brand-name">AI EDIT <b>STUDIO</b></span><small>DIRECTOR 0.11</small></a>
   <div class="project-bar" id="project-bar" hidden>
     <span id="project-title" class="project-title"></span>
     <span id="revision" class="chip" title="Saved revision"></span>
@@ -43,7 +43,7 @@
         <button id="welcome-agent" class="ghost big">Connect your agent</button><a class="ghost big" href="launch.html">Product page ↗</a></div>
       <ul class="proof">
         <li><b>100% local</b> No upload, no account, originals stay untouched</li>
-        <li><b>Agent-native</b> 57 tools via MCP, HTTP/OpenAPI and CLI · atomic edits, storyboard & review</li>
+        <li><b>Agent-native</b> 59 tools via MCP, HTTP/OpenAPI and CLI · atomic edits, storyboard & review</li>
         <li><b>Edit once</b> 16:9, 9:16, 1:1, 4:5 and WhatsApp from one timeline · up to 20 minutes</li>
       </ul>
     </div>
@@ -337,8 +337,8 @@
         <div id="sync-result" class="sync-result"></div>
         <button id="mc-run" class="secondary wide" type="button">Multicam edit: picture follows the speaker</button>
         <h3>Hand off to another editor</h3>
-        <div id="handoff" class="row-actions"><button class="ghost" type="button" data-format="edl">EDL</button><button class="ghost" type="button" data-format="fcpxml">FCPXML</button><button class="ghost" type="button" data-format="otio">OTIO</button><button class="ghost" type="button" data-format="csv">CSV</button><button class="ghost" type="button" data-format="chapters">Chapters</button><select id="handoff-fps" aria-label="Frame rate"><option>24</option><option>25</option><option selected>30</option><option>50</option><option>60</option></select></div>
-        <p class="help">Premiere, Resolve and Avid read EDL; Final Cut and Resolve read FCPXML. They point at your original files; nothing is re-encoded.</p>
+        <div id="handoff" class="row-actions"><button class="ghost" type="button" data-format="edl">EDL</button><button class="ghost" type="button" data-format="fcpxml">FCPXML</button><button class="ghost" type="button" data-format="otio">OTIO</button><button class="ghost" type="button" data-format="csv">CSV</button><button class="ghost" type="button" data-format="chapters">Chapters</button><button class="ghost" type="button" data-format="srt">SRT</button><button class="ghost" type="button" data-format="vtt">VTT</button><select id="handoff-fps" aria-label="Frame rate"><option>24</option><option>25</option><option selected>30</option><option>50</option><option>60</option></select></div>
+        <p class="help">Premiere, Resolve and Avid read EDL; Final Cut and Resolve read FCPXML. SRT and VTT export captions timed to the edited timeline.</p>
         <h3>Proxies</h3>
         <p id="proxy-status" class="help"></p>
         <div class="row-actions"><button id="proxy-make" class="secondary" type="button">Make proxies</button><button id="proxy-remove" class="ghost" type="button" disabled>Remove</button></div>

@@ -1,4 +1,14 @@
-# AI Edit Studio — Director 0.10
+<p align="center"><img src="docs/site/assets/icon.png" alt="AI Edit Studio icon" width="96" height="96"></p>
+
+# AI Edit Studio — Director 0.11
+<p align="center"><b>Your footage. Your story. Your studio.</b><br>A local-first video editor for creators and their AI agents.</p>
+<p align="center"><a href="https://laaielichter.github.io/Ai-edit-studio/">Project website</a> · <a href="#install-and-start-windows-beta">Get started</a> · <a href="docs/INTEGRATIONS.md">Connect your agent</a> · <a href="CONTRIBUTING.md">Contribute</a></p>
+
+[![Project website](https://img.shields.io/badge/Project_website-Visit-ff603d?style=flat-square)](https://laaielichter.github.io/Ai-edit-studio/) [![CI](https://github.com/laaielichter/Ai-edit-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/laaielichter/Ai-edit-studio/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-202220?style=flat-square)](LICENSE)
+
+<a href="https://laaielichter.github.io/Ai-edit-studio/"><img src="docs/site/assets/social-card.png" alt="AI Edit Studio — local-first editing for creators and their AI agents" width="1200"></a>
+
+## One studio. Your final cut.
 
 A **local-first video editor** for creators, game developers and their agents. One engine with a
 pro timeline for people and the same 59 tools for agents (MCP, HTTP/OpenAPI, CLI). Your footage never
@@ -100,6 +110,8 @@ leaves your machine; originals are only read.
 | OpenAPI 3.1 | `GET /api/openapi.json` |
 | CLI | `node cli.mjs studio <tool> --request file.json [--wait]` |
 
+`node cli.mjs studio <tool> --help` lists the flags of one tool. They come from its schema (`--project-id`, `--dry-run`, `--timeout-seconds`, ...) and `--request` still takes the full JSON.
+
 One call from footage to renders: `studio_auto_edit`. Text-based editing: `studio_transcribe`, `studio_transcript`,
 `studio_text_edit`. Plus `studio_reframe`, `studio_publish_pack`, `studio_brand`. Atomic `studio_edit` batches on stable clip ids (with `dryRun`), `studio_timeline` + `studio_storyboard`
 to see the edit, `studio_review` with machine-applicable fixes, beats, highlights, styles, caption
@@ -156,6 +168,11 @@ The server binds to `127.0.0.1:32146` only (`GAME_TRAILER_STUDIO_PORT` to change
   Formats the browser cannot play (e.g. some MKV/HEVC) still edit fine; watch the rendered preview.
 - SDR / H.264 output; 4K is Lanczos upscaling, not AI detail.
 - Beta: not yet verified by many outside users. Bug reports are welcome as GitHub issues.
+
+## Made in the open
+
+Built and maintained by [laaielichter](https://github.com/laaielichter). Contributions and real-world feedback are welcome.
+If the studio is useful to you, a GitHub star is appreciated — always optional.
 
 ## Development
 
