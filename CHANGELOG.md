@@ -9,6 +9,7 @@
 - **Long transcripts import**: `studio_transcript` import and the FFmpeg-whisper path no longer stop at the 300-cue caption limit, and WebVTT files with header lines, cue settings, cue ids, short `mm:ss.ttt` times or `NOTE`/`STYLE` blocks are read correctly (#20).
 - **CLI flag values keep every `=`**: `--title=Score=100` now gives `Score=100` instead of `Score` (#27).
 - **Brand kit ids fold accents**: `Café Noir` becomes `cafe-noir` and `Zoë` becomes `zoe`; kits saved under the old id are still found, and a name without Latin letters or digits says why it is refused (#29).
+- **Brand kits accept shorthand hex colours** such as `#ABC` and save them as six-digit colours (`#AABBCC`) (#49).
 - **YouTube chapters stay valid**: a first chapter before 10 s moves to 0:00 instead of getting an "Intro" a few seconds before it (#30).
 - **The right preview shape for every social size**: `square720`, `portrait1440` and the other sizes get a square or 4:5 preview instead of 9:16 (#31).
 - **`speech-setup` checks the model name first**: a typo gives `INVALID_MODEL` with the common names before anything is downloaded, and a failed download no longer leaves a `.partial` file (#32).
