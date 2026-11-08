@@ -52,6 +52,16 @@ export function hashtags(...texts) {
   return words.map(w => w.toLowerCase()).filter(w => !stop.has(w) && !/^\d+$/.test(w) && !seen.has(w) && seen.add(w)).slice(0, 5);
 }
 
+function uniqueHashtags(tags) {
+  const seen = new Set();
+  return tags.filter(tag => {
+    const key = tag.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 /** Draft copy per platform from the user's own title/brief/CTA. No invented claims. */
 export function metadataDrafts({ title, brief, cta, chapterList = [], tags = [], platforms }) {
   const base = clean(title, 100) || 'Untitled';
@@ -59,7 +69,7 @@ export function metadataDrafts({ title, brief, cta, chapterList = [], tags = [],
   const out = {};
   for (const id of platforms) {
     const p = PUBLISH_PLATFORMS[id]; if (!p) continue;
-    const list = [...new Set([...p.tags, ...tags])].slice(0, id === 'x' ? 2 : 6).map(t => `#${t}`);
+    const list = uniqueHashtags([...p.tags, ...tags]).slice(0, id === 'x' ? 2 : 6).map(t => `#${t}`);
     // The call to action, the chapter list and the hashtags have to survive the cut, so the brief is what gets shortened.
     const tail = [cta ? clean(cta, 100) : '', id === 'youtube' && chapterList.length ? `\n${chapterList.map(c => c.line).join('\n')}` : '', list.join(' ')].filter(Boolean);
     const fixed = tail.length ? `\n\n${tail.join('\n\n')}` : '';
@@ -180,7 +190,7 @@ export async function buildPublishPack(project, dir, request = {}, { brand = nul
     const vtt = path.join(dir, 'captions.vtt'); await fs.writeFile(vtt, toVtt(cues), 'utf8'); files.push({ kind: 'captions', file: vtt });
   }
   const chapterList = chapters(project.plan.clips, project.options);
-  const tags = [...(brand?.hashtags ?? []), ...hashtags(title, project.options.brief ?? '')].slice(0, 6);
+  const tags = uniqueHashtags([...(brand?.hashtags ?? []), ...hashtags(title, project.options.brief ?? '')]).slice(0, 6);
   const drafts = metadataDrafts({ title, brief: project.options.brief, cta: project.options.endTitle, chapterList, tags, platforms });
   const md = [`# ${title}`, '', `Revision ${project.revision} · ${totalDuration(project.plan.clips).toFixed(1)} s · drafts — review before posting.`, '',
     ...(chapterList.length ? ['## Chapters', '', ...chapterList.map(c => c.line), ''] : []),

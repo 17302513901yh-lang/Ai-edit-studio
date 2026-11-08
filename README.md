@@ -77,7 +77,8 @@ leaves your machine; originals are only read.
   and long pauses in the transcript, search phrases, or build a paper edit from selected passages. Captions follow.
 - **Smart reframe** — for 9:16, 1:1 and 4:5 the crop follows the measured motion per shot and pans when it moves.
 - **Publish pack** — thumbnails and covers from the sharpest high-energy frames with your title, clean stills,
-  SRT/VTT, YouTube chapters and per-platform title/description/hashtag drafts. Never posts anything.
+  SRT/VTT, YouTube chapters and per-platform title/description/hashtag drafts. Tags that differ only by
+  capitalisation share a slot and keep the first spelling. Never posts anything.
 - **Brand kits** — logo (position/size/opacity), colours, font, intro and outro, CTA and hashtags; one click or one call.
 
 **For editors** (open `http://127.0.0.1:32146/`; interface in English or Dutch, switch top right)
