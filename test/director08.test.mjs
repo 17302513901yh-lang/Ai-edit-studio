@@ -8,7 +8,7 @@ import { runProcess } from '../src/process.mjs';
 import { applyOperations, normalizeSections, sectionSpans, totalDuration, layout } from '../public/edit-ops.js';
 import { buildFilter, segmentBoundaries } from '../src/render.mjs';
 import { validateClips } from '../src/editing.mjs';
-import { fitDuration, searchWords, searchProject, assembleFromScript, scriptLines, multicamPlan, exportTimeline, timecode, chapterMarks, chapterMetadata } from '../src/longform.mjs';
+import { fitDuration, searchWords, searchProject, assembleFromScript, scriptLines, multicamPlan, exportTimeline, timecode, dropFrameTimecode, chapterMarks, chapterMetadata } from '../src/longform.mjs';
 import { correlate, onsets } from '../src/sync.mjs';
 import { agentTools, validateArguments, callAgentTool, OPERATIONS } from '../src/agent-tools.mjs';
 
@@ -198,6 +198,34 @@ test('timeline export: CSV text cells that would read as formulas are quoted', (
   assert.match(csv[1], /"cam","0\.000","4\.000"/); // numeric columns stay numbers
   const plain = exportTimeline({ format: 'csv', clips: [{ id: 'c', sourceIndex: 0, start: 0, end: 4, label: 'Hello' }], sources, options: {} }).content.split('\r\n');
   assert.match(plain[1], /^"1","","Hello","cam"/); // ordinary labels are unchanged
+test('timeline export: NTSC rates 23.976/29.97/59.94 export at their real frame rate', () => {
+  const sources = [src(60)];
+  const clips = [{ id: 'a', sourceIndex: 0, start: 0, end: 4 }, { id: 'b', sourceIndex: 0, start: 10, end: 14, speed: 1.5 }];
+  // drop-frame timecode (SMPTE 12M), the examples from the issue
+  assert.equal(dropFrameTimecode(1800, 30), '00:01:00;02');
+  assert.equal(dropFrameTimecode(17982, 30), '00:10:00;00');
+  assert.equal(dropFrameTimecode(3600, 60), '00:01:00;04');
+  assert.equal(timecode(1.5, 29.97), '00:00:01:15'); // no floating-point frame counts
+  assert.equal(timecode(10, 23.976), '00:00:10:00');
+  const edl = exportTimeline({ format: 'edl', clips, sources, options: {}, fps: 29.97 }).content;
+  assert.match(edl, /FCM: DROP FRAME/);
+  assert.match(edl, /C        00:00:00;00 00:00:04;00 01:00:00;00 01:00:04;00/); // one hour of record time lands on 01:00:00;00
+  assert.match(edl, /M2   AX +045\.0/); // the speed line uses the real rate
+  const fcp = exportTimeline({ format: 'fcpxml', clips, sources, options: {}, fps: 29.97 }).content;
+  assert.match(fcp, /frameDuration="1001\/30000s"/);
+  assert.match(fcp, /tcFormat="DF"/);
+  assert.match(fcp, /offset="\d+\/30000s"/); // every time in the 29.97 timebase
+  const fcp23976 = exportTimeline({ format: 'fcpxml', clips, sources, options: {}, fps: 23.976 }).content;
+  assert.match(fcp23976, /frameDuration="1001\/24000s"/);
+  assert.match(fcp23976, /tcFormat="NDF"/); // 23.976 stays non-drop
+  const otio = JSON.parse(exportTimeline({ format: 'otio', clips, sources, options: {}, fps: 29.97 }).content);
+  const rate = otio.tracks.children[0].children[0].source_range.start_time.rate;
+  assert.ok(Math.abs(rate - 30000 / 1001) < 1e-9, 'OTIO carries 30000/1001, not 30');
+  const otio30 = JSON.parse(exportTimeline({ format: 'otio', clips, sources, options: {}, fps: 30 }).content);
+  assert.equal(otio30.tracks.children[0].children[0].source_range.start_time.rate, 30); // integer rates unchanged
+  const edl30 = exportTimeline({ format: 'edl', clips, sources, options: {}, fps: 30 }).content;
+  assert.match(edl30, /FCM: NON-DROP FRAME/);
+  assert.match(edl30, /01:00:00:00 01:00:04:00/);
 });
 
 test('timeline export: OTIO carries transitions as Transition.1 items between the clips', () => {

@@ -3,6 +3,7 @@
 ## Unreleased
 
 - **The CSV shot list is spreadsheet-safe**: a label, section or source name that starts with `=`, `+`, `-` or `@` (or a tab or carriage return) gets a leading `'` inside the quotes, so Excel and LibreOffice read it as text instead of a formula; numbers stay numbers (#59).
+- **NTSC frame rates export exactly**: 23.976, 29.97 and 59.94 keep their real rate instead of rounding to 24/30/60 — 29.97 and 59.94 write drop-frame EDLs (`FCM: DROP FRAME`, `;` timecodes) and a `1001/30000s` FCPXML timebase, 23.976 a 24-frame non-drop EDL, OTIO the fractional rate, and integer rates are unchanged (#63).
 - **Chinese and Japanese clips follow sentence boundaries**: the clip finder recognises full-width sentence endings, including those before a closing quote or parenthesis (#51).
 - **Chinese and Japanese transcript captions split at sentence endings**, including short sentences and punctuation before a closing quote or parenthesis (#58).
 - **Long thumbnail and cover titles show an ellipsis** when more than three wrapped lines are needed (#48).
