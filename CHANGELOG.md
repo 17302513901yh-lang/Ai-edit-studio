@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Chinese and Japanese clips follow sentence boundaries**: the clip finder recognises full-width sentence endings, including those before a closing quote or parenthesis (#51).
 - **`node cli.mjs help` lists every studio command**, built from the tool list, so `music`, `apply` and `guide` show up and new tools appear by themselves (#13).
 - **Clearer file errors**: a rejected file now names the path you passed and the check that failed (not a regular file, the extension with the allowed list, or the size against the limit) (#14).
 - **A damaged or non-media file is named**: when ffprobe cannot read a video, still or audio file, the error is `UNSUPPORTED_MEDIA` with the file and ffprobe's reason, instead of "Process exited with code 1" (#19).

@@ -57,6 +57,22 @@ test('clip finder: sentence-aligned, ranked, non-overlapping', () => {
   assert.throws(() => findClips({ sources: src, minSeconds: 30, maxSeconds: 10 }), /minSeconds/);
 });
 
+test('sentences split on Chinese and Japanese sentence endings', () => {
+  const words = ['第一句。', '真的吗？', '太好了！', '「そうです。」', '『本当？』', '（はい！）', 'OK.']
+    .map((text, i) => ({ start: i * 0.5, end: i * 0.5 + 0.4, text }));
+  assert.deepEqual(sentences(words).map(({ from, to }) => [from, to]), words.map((_, i) => [i, i]));
+});
+
+test('clip finder marks a clip ending in a full-width period as complete', () => {
+  const words = ['我们', '现在', '来', '看', '这段', '短片', '的', '结尾。']
+    .map((text, i) => ({ start: i * 0.5, end: i * 0.5 + 0.4, text }));
+  const [clip] = findClips({
+    sources: [{ duration: 4 }], transcripts: { 0: { words } }, count: 1, minSeconds: 3, maxSeconds: 4,
+  });
+  assert.match(clip.text, /结尾。$/);
+  assert.equal(clip.complete, true);
+});
+
 test('QC parses ebur128/blackdetect/freezedetect/silencedetect and judges', () => {
   const log = `[Parsed_ebur128_0] t: 1 M: -20 S: -20 I: -30.0 LUFS LRA: 0 LU
 [blackdetect @ x] black_start:5.0 black_end:6.2 black_duration:1.2
