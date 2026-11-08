@@ -75,6 +75,11 @@ test('SRT captions follow source trims, reorder, speed and timing correction', (
   assert.throws(() => parseSrt('1\nnot a time\nHello')); assert.throws(() => normalizeCaptions([{ sourceIndex: 0, start: 5, end: 2, text: 'bad' }]));
   assert.throws(() => validateCaptionSources(cues, [{ duration: 3 }]));
 });
+test('SRT import drops ASS override blocks but keeps literal braces', () => {
+  const cues = parseSrt('1\n00:00:01,000 --> 00:00:03,000\n{\\an8}Hello <b>there</b>\n\n2\n00:00:04,000 --> 00:00:06,000\n{\\i1}{\\pos(10,20)} {bonus} keep me\n', 0);
+  assert.deepEqual(cues.map(c => c.text), ['Hello there', '{bonus} keep me']);
+  assert.equal(parseSrt('1\n00:00:01,000 --> 00:00:03,000\n{\\an8}Top line\n', 0)[0].text, 'Top line');
+});
 test('silence proposal is non-mutating, preserves padding and protected final shot', () => {
   const s = { ...source, audio: Array.from({ length: 20 }, (_, i) => ({ time: i / 2, value: i >= 6 && i < 12 ? -90 : -10 })) };
   const plan = validateClips([clip], [s]); const before = JSON.stringify(plan);

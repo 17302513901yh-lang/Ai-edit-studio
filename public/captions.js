@@ -40,7 +40,7 @@ export function parseSrt(text, sourceIndex = 0) {
     const lines = block.split('\n'); if (/^\d+$/.test(lines[0].trim())) lines.shift();
     const times = lines.shift()?.split('-->');
     if (times?.length !== 2 || !lines.length) throw new Error('Invalid SRT block.');
-    return { sourceIndex, start: stamp(times[0]), end: stamp(times[1]), text: lines.join(' ').replace(/<[^>]*>/g, '') };
+    return { sourceIndex, start: stamp(times[0]), end: stamp(times[1]), text: lines.join(' ').replace(/<[^>]*>/g, '').replace(/\{\\[^}]*\}/g, '') };
   }));
 }
 export function mapCaptions(rows, clips, offset = 0) {
