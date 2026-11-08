@@ -300,9 +300,11 @@ export function exportTimeline({ format, clips, sources, options = {}, name = 'E
   }
   if (format === 'csv') {
     const q = v => `"${String(v ?? '').replaceAll('"', '""')}"`;
+    // CSV formula injection guard (OWASP): a text cell starting with one of = + - @, a tab or a CR is read as a formula by Excel & co.
+    const safe = v => { const s = String(v ?? ''); return /^[=+\-@\t\r]/.test(s) ? `'${s}` : s; };
     const head = ['#', 'section', 'label', 'source', 'source_in', 'source_out', 'timeline_in', 'timeline_out', 'duration', 'speed', 'transition'];
     const sec = i => sections.find(s => i >= s.startIndex && i <= s.endIndex)?.name ?? '';
-    const body = rows.map((r, i) => [i + 1, sec(i), r.label ?? '', sources[r.sourceIndex]?.name, r.start.toFixed(3), r.end.toFixed(3), r.visibleStart.toFixed(3), r.visibleEnd.toFixed(3), (r.visibleEnd - r.visibleStart).toFixed(3), r.speed ?? 1, r.transition ?? 'cut'].map(q).join(','));
+    const body = rows.map((r, i) => [i + 1, safe(sec(i)), safe(r.label ?? ''), safe(sources[r.sourceIndex]?.name), r.start.toFixed(3), r.end.toFixed(3), r.visibleStart.toFixed(3), r.visibleEnd.toFixed(3), (r.visibleEnd - r.visibleStart).toFixed(3), r.speed ?? 1, safe(r.transition ?? 'cut')].map(q).join(','));
     return { extension: 'csv', mime: 'text/csv', content: [head.join(','), ...body].join('\r\n') };
   }
     if (format === 'chapters') {

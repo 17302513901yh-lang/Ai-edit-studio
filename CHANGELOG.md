@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **The CSV shot list is spreadsheet-safe**: a label, section or source name that starts with `=`, `+`, `-` or `@` (or a tab or carriage return) gets a leading `'` inside the quotes, so Excel and LibreOffice read it as text instead of a formula; numbers stay numbers (#59).
 - **Chinese and Japanese clips follow sentence boundaries**: the clip finder recognises full-width sentence endings, including those before a closing quote or parenthesis (#51).
 - **`node cli.mjs help` lists every studio command**, built from the tool list, so `music`, `apply` and `guide` show up and new tools appear by themselves (#13).
 - **Clearer file errors**: a rejected file now names the path you passed and the check that failed (not a regular file, the extension with the allowed list, or the size against the limit) (#14).
