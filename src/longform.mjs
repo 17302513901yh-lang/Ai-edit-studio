@@ -312,7 +312,17 @@ export function exportTimeline({ format, clips, sources, options = {}, name = 'E
     if (!marks.length) marks.push({ start: 0, title: 'Intro' });
     const long = totalDuration(clips) >= 3600;
     const clock = t => (long ? `${Math.floor(t / 3600)}:${pad2(Math.floor(t / 60) % 60)}` : pad2(Math.floor(t / 60))) + `:${pad2(Math.floor(t % 60))}`;
-    return { extension: 'txt', mime: 'text/plain', content: marks.map(m => `${clock(m.start)} ${m.title}`).join('\n') };
+    // YouTube only shows a chapter list that starts at 0:00, has at least 3 chapters and keeps
+    // every chapter at least 10 s long. chapterMarks already pins the first chapter at 0:00;
+    // these warnings only say when the list breaks the other two rules and YouTube ignores it.
+    const warnings = [];
+    if (marks.length < 3) warnings.push(`YouTube needs at least 3 chapters; this list has ${marks.length}.`);
+    const total = totalDuration(clips);
+    for (let i = 0; i < marks.length; i++) {
+      const span = r3((marks[i + 1] ? marks[i + 1].start : total) - marks[i].start);
+      if (span < 10) warnings.push(`Chapter "${marks[i].title}" is ${span} s long; YouTube needs at least 10 s.`);
+    }
+    return { extension: 'txt', mime: 'text/plain', content: marks.map(m => `${clock(m.start)} ${m.title}`).join('\n'), warnings };
   }
   // Voice-over / multicam sound and music as separate audio (FCPXML connected clips, OTIO audio track).
   const total = totalDuration(clips);
