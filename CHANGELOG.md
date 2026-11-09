@@ -33,6 +33,7 @@
 
 - @bfs2021 for the generated help (#13), the long SRT/VTT transcript import (#20), the `=` flag fix (#27) the VTT entity decoding (#40) and the brief that makes room for the call to action and hashtags (#50) and the ASS override clean-up in SRT import (#65).
 - @wized2 for the clearer file errors (#14) and the named probe failures (#19).
+- @rahul05ranjan for the spreadsheet-safe CSV shot list (#66), their first contribution to AI Edit Studio.
 - @tnalbant for the accent-folding brand kit ids that keep old kits readable (#29) and the request-file check (#28).
 - @DaniLlano for the chapter fix (#30), the preview shapes (#31), the safer speech setup (#32), OTIO transitions (#35), the music and story pointers for agents (#36), the SRT time fix (#43), the `bars` scene (#42), MP4 chapters (#41) and the schema-derived CLI flags with per-tool help (#44).
 - @Aaqibhafeezkhan for the troubleshooting entries and their error-code test (#37), the tool-count and version sync with its docs test (#34) and the SRT/VTT timeline export (#33).
