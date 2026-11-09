@@ -24,6 +24,7 @@
 - **Captions as SRT and WebVTT from the timeline**: `studio_export_timeline {format:"srt"|"vtt"}` follows cuts, speed changes and caption offsets, with export buttons in the editor (#33).
 - **More SRT files import**: one-digit hours (`0:00:01,000`) and position coordinates after the end time are accepted (#43).
 - **`bars` scene for story documents**: up to eight bars grow one after another to show a comparison, with an optional highlight and a `<id>.done` event (#42).
+- **VTT exports preserve caption text** by escaping `&`, `<` and `>` in cues (#71).
 - **VTT transcripts decode HTML entities**: `&amp;`, `&lt;`, `&gt;`, `&quot;`, `&#39;`, `&nbsp;` and numeric forms become the characters they stand for, decoded once after the tags are stripped (#40).
 - **MP4 chapters**: full renders embed one chapter per section (or labelled marker), with the same times as the chapters export plus any brand intro; `options.chapters:"off"` turns it off and previews and range renders get none (#41).
 - **`node cli.mjs studio <tool> --help` and typed flags**: every top-level tool argument works as a kebab-case flag (`--timeout-seconds 30`, `--export-id`), converted from the tool's schema, and an unknown flag is refused with the list of valid ones (#44).

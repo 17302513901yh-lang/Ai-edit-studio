@@ -110,9 +110,15 @@ export function mapCaptions(rows, clips, offset = 0) {
   });
   return result.sort((a, b) => a.start - b.start);
 }
-function srtTime(value) {
+function captionTime(value, separator = ',') {
   const ms = Math.round(value * 1000);
-  return `${String(Math.floor(ms / 3600000)).padStart(2, '0')}:${String(Math.floor(ms / 60000) % 60).padStart(2, '0')}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')},${String(ms % 1000).padStart(3, '0')}`;
+  return `${String(Math.floor(ms / 3600000)).padStart(2, '0')}:${String(Math.floor(ms / 60000) % 60).padStart(2, '0')}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}${separator}${String(ms % 1000).padStart(3, '0')}`;
 }
-export function toSrt(rows) { return rows.map((c, i) => `${i + 1}\n${srtTime(c.start)} --> ${srtTime(c.end)}\n${c.text}\n`).join('\n'); }
-export function toVtt(rows) { return `WEBVTT\n\n${toSrt(rows).replace(/(\d{2,}:\d{2}:\d{2}),(\d{3})/g, '$1.$2')}`; }
+export function toSrt(rows) { return rows.map((c, i) => `${i + 1}\n${captionTime(c.start)} --> ${captionTime(c.end)}\n${c.text}\n`).join('\n'); }
+export function toVtt(rows) {
+  const cues = rows.map((c, i) => {
+    const text = String(c.text).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+    return `${i + 1}\n${captionTime(c.start, '.')} --> ${captionTime(c.end, '.')}\n${text}\n`;
+  });
+  return `WEBVTT\n\n${cues.join('\n')}`;
+}
