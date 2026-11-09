@@ -7,7 +7,7 @@ import { applyOperations, mergeRanges, subtractRanges, totalDuration, coreClip }
 import { normalizeWords, wordsFromSegments, wordsToCaptions, findFillers, isFiller, wordRanges, findPauses, matchPhrase, wordsInEdit, captionsFromEdit, transcriptText } from '../public/transcript.js';
 import { motionTrack, focusFromTrack, reframeOperations } from '../src/reframe.mjs';
 import { buildAutoEdit, usableIntervals, windows, hookCandidates, PLATFORMS } from '../src/autoedit.mjs';
-import { buildPublishPack, chapters, metadataDrafts, hashtags, frameQuality } from '../src/publish.mjs';
+import { buildPublishPack, chapters, metadataDrafts, hashtags, frameQuality, wrapTitle } from '../src/publish.mjs';
 import { findFfmpegTools } from '../src/ffmpeg.mjs';
 import { parseWhisperJson, MODEL_ORDER } from '../src/transcribe.mjs';
 import { buildFilter, filterColors, captionDrawStyle, textDrawStyle } from '../src/render.mjs';
@@ -217,6 +217,16 @@ test('brand colours stay numeric in filters', () => {
   assert.match(textDrawStyle('note', 'center', 1920, false, { accent: '#00FF00' }), /fontcolor=0x00FF00/);
   const graph = buildFilter({ actualDuration: 2, clips: [{ source: 'a.mp4', start: 0, end: 2, duration: 2, speed: 1, hasAudio: false }] }, { width: 1920, height: 1080, fps: 30, logoInputIndex: 1, logoPosition: 'bottom-right', logoOpacity: 0.5 });
   assert.match(graph, /colorchannelmixer=aa=0\.500/); assert.match(graph, /overlay=x=W-w-W\*0\.04:y=H-h-H\*0\.05/);
+});
+
+test('publish: titles that fit keep their original wrapping', () => {
+  assert.equal(wrapTitle('The Last Lighthouse Keeper: A', 12), 'The Last\nLighthouse\nKeeper: A');
+});
+
+test('publish: truncated titles show an ellipsis within the third line limit', () => {
+  assert.equal(wrapTitle('The Last Lighthouse Keeper: A Story About Courage', 12), 'The Last\nLighthouse\nKeeper: A…');
+  assert.equal(wrapTitle('alpha bravo charlie d echo', 9), 'alpha\nbravo\ncharlie…');
+  assert.equal(wrapTitle('alpha bravo abcdefghijkl echo', 9), 'alpha\nbravo\nabcdefgh…');
 });
 
 test('publish: a first chapter before 10 s moves to 0:00 instead of getting an Intro', () => {

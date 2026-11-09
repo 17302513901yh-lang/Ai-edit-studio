@@ -144,10 +144,16 @@ async function renderStill({ source, time, out, width, height, focusX = 0.5, foc
   await runProcess(tools.ffmpeg, ['-hide_banner', '-nostdin', '-v', 'error', '-n', ...(source.still ? [] : ['-ss', time.toFixed(3)]), '-protocol_whitelist', 'file,pipe', '-i', source.file,
     '-frames:v', '1', '-vf', vf, '-q:v', '2', out], { timeoutMs: 60_000 });
 }
-function wrapTitle(text, max) {
+export function wrapTitle(text, max) {
   const lines = []; let line = '';
   for (const word of text.split(' ')) { if (line && (line + ' ' + word).length > max) { lines.push(line); line = ''; } line += (line ? ' ' : '') + word; }
   if (line) lines.push(line);
+  if (lines.length > 3) {
+    const last = lines[2];
+    const boundary = last.lastIndexOf(' ', max - 1);
+    const shortened = last.length < max ? last : last.slice(0, boundary > 0 ? boundary : max - 1);
+    lines[2] = shortened.replace(/[\uD800-\uDBFF]$/, '') + '…';
+  }
   return lines.slice(0, 3).join('\n');
 }
 

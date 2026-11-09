@@ -106,6 +106,20 @@ test('VTT import decodes HTML entities in cue text after stripping tags', () => 
   const proto = parseVttCues('WEBVTT\n\n00:01.000 --> 00:02.000\n&constructor; &amp;lt; &amp;');
   assert.equal(proto[0].text, '&constructor; &lt; &');
 });
+test('SRT import drops ASS override blocks but keeps literal braces', () => {
+  const srt = String.raw`1
+00:00:01,000 --> 00:00:03,000
+{\an8}Hello <b>there</b>
+
+2
+00:00:04,000 --> 00:00:06,000
+{\i1}{\pos(10,20)} {bonus} keep me
+`;
+  for (const cues of [parseSrt(srt, 0), parseSrtCues(srt, 0)]) assert.deepEqual(cues.map(c => c.text), ['Hello there', '{bonus} keep me']);
+  assert.equal(parseSrt(String.raw`1
+00:00:01,000 --> 00:00:03,000
+{\an8}Top line`, 0)[0].text, 'Top line');
+});
 test('silence proposal is non-mutating, preserves padding and protected final shot', () => {
   const s = { ...source, audio: Array.from({ length: 20 }, (_, i) => ({ time: i / 2, value: i >= 6 && i < 12 ? -90 : -10 })) };
   const plan = validateClips([clip], [s]); const before = JSON.stringify(plan);

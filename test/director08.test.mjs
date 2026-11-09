@@ -185,6 +185,21 @@ test('timeline export: EDL, CSV, chapters, FCPXML and OTIO are well formed', () 
   assert.throws(() => exportTimeline({ format: 'aaf', clips, sources }), /format/);
 });
 
+test('timeline export: CSV text cells that would read as formulas are quoted', () => {
+  const sources = [src(60, { name: 'cam', file: '/m/a.mp4' })];
+  const clips = [
+    { id: 'a', sourceIndex: 0, start: 0, end: 4, label: '=HYPERLINK("http://evil.example","click")' },
+    { id: 'b', sourceIndex: 0, start: 10, end: 14, label: '+1 take' },
+  ];
+  const csv = exportTimeline({ format: 'csv', clips, sources, options: {} }).content.split('\r\n');
+  assert.equal(csv.length, 3);
+  assert.match(csv[1], /^"1","","'=HYPERLINK/); // spreadsheet-neutral: the label is text, not a formula
+  assert.match(csv[2], /^"2","","'\+1 take"/);
+  assert.match(csv[1], /"cam","0\.000","4\.000"/); // numeric columns stay numbers
+  const plain = exportTimeline({ format: 'csv', clips: [{ id: 'c', sourceIndex: 0, start: 0, end: 4, label: 'Hello' }], sources, options: {} }).content.split('\r\n');
+  assert.match(plain[1], /^"1","","Hello","cam"/); // ordinary labels are unchanged
+});
+
 test('timeline export: OTIO carries transitions as Transition.1 items between the clips', () => {
   const sources = [src(40), src(40)];
   const items = (clips, fps = 30) => JSON.parse(exportTimeline({ format: 'otio', clips, sources, options: {}, fps }).content).tracks.children[0].children;
