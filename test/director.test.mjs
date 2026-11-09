@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { normalizeOptions, validateClips, proposeEdit, validateCaptionSources } from '../src/editing.mjs';
 import { normalizeFinish, normalizeTransform, gradeFilter } from '../src/finishing.mjs';
 import { EditHistory, splitClip, availableClip } from '../public/edit-history.js';
-import { parseSrt, parseSrtCues, parseVttCues, mapCaptions, normalizeCaptions, toSrt } from '../public/captions.js';
+import { parseSrt, parseSrtCues, parseVttCues, mapCaptions, normalizeCaptions, toSrt, toVtt } from '../public/captions.js';
 import { callAgentTool, agentTools } from '../src/agent-tools.mjs';
 import { buildFilter, renderTrailer } from '../src/render.mjs';
 import { proposeSilenceCuts } from '../src/silence.mjs';
@@ -105,6 +105,29 @@ test('VTT import decodes HTML entities in cue text after stripping tags', () => 
   assert.equal(tagged[0].text, '<b>bold</b>');
   const proto = parseVttCues('WEBVTT\n\n00:01.000 --> 00:02.000\n&constructor; &amp;lt; &amp;');
   assert.equal(proto[0].text, '&constructor; &lt; &');
+});
+test('VTT export escapes cue text and round-trips without changing timing or SRT', () => {
+  const rows = [
+    { start: 0, end: 2, text: 'Tom & Jerry <3 forever' },
+    { start: 2, end: 4, text: 'a --> b' },
+    { start: 4, end: 6, text: 'Literal &lt;' },
+    { start: 6, end: 8, text: 'Ordinary caption' },
+    { start: 8, end: 10, text: 'Timecode 00:00:01,250' },
+  ];
+  const vtt = toVtt(rows);
+  assert.equal(vtt, [
+    'WEBVTT', '',
+    '1', '00:00:00.000 --> 00:00:02.000', 'Tom &amp; Jerry &lt;3 forever', '',
+    '2', '00:00:02.000 --> 00:00:04.000', 'a --&gt; b', '',
+    '3', '00:00:04.000 --> 00:00:06.000', 'Literal &amp;lt;', '',
+    '4', '00:00:06.000 --> 00:00:08.000', 'Ordinary caption', '',
+    '5', '00:00:08.000 --> 00:00:10.000', 'Timecode 00:00:01,250', '',
+  ].join('\n'));
+  assert.deepEqual(parseVttCues(vtt), rows.map(row => ({ sourceIndex: 0, ...row })));
+  assert.equal(toSrt(rows.slice(0, 2)), [
+    '1', '00:00:00,000 --> 00:00:02,000', 'Tom & Jerry <3 forever', '',
+    '2', '00:00:02,000 --> 00:00:04,000', 'a --> b', '',
+  ].join('\n'));
 });
 test('SRT import drops ASS override blocks but keeps literal braces', () => {
   const srt = String.raw`1
