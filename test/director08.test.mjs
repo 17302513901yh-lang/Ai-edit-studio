@@ -174,7 +174,16 @@ test('timeline export: EDL, CSV, chapters, FCPXML and OTIO are well formed', () 
   assert.match(edl, /^TITLE: n/); assert.match(edl, /M2 +AX +045\.0/); assert.match(edl, /01:00:00:00 01:00:04:00/);
   const csv = exportTimeline({ format: 'csv', clips, sources, options }).content.split('\r\n');
   assert.equal(csv.length, 4); assert.match(csv[2], /"Part B"/);
-  assert.equal(exportTimeline({ format: 'chapters', clips, sources, options }).content, '00:00 Intro\n00:04 Part B');
+  const chapters = exportTimeline({ format: 'chapters', clips, sources, options });
+  assert.equal(chapters.content, '00:00 Intro\n00:04 Part B');
+  // YouTube ignores this list (2 chapters, the first only 4 s) — the export now says so (#60)
+  assert.deepEqual(chapters.warnings, [
+    'YouTube needs at least 3 chapters; this list has 2.',
+    'Chapter "Intro" is 4 s long; YouTube needs at least 10 s.',
+    'Chapter "Part B" is 5.5 s long; YouTube needs at least 10 s.']);
+  const okChapters = exportTimeline({ format: 'chapters', clips: [{ id: 'x', sourceIndex: 0, start: 0, end: 45 }], sources: [src(100)], options: { markers: [{ time: 0, label: 'A' }, { time: 15, label: 'B' }, { time: 30, label: 'C' }] } });
+  assert.equal(okChapters.content, '00:00 A\n00:15 B\n00:30 C');
+  assert.deepEqual(okChapters.warnings, []);
   const fcp = exportTimeline({ format: 'fcpxml', clips, sources, options, name: 'A & B' }).content;
   assert.match(fcp, /<project name="A &amp; B">/); assert.match(fcp, /file:\/\/\/C:\/media\/cam%20a\.mp4/); assert.match(fcp, /lane="-1" name="Voice"/);
   assert.equal((fcp.match(/<asset-clip ref="a/g) ?? []).length, 3);
