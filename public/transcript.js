@@ -43,6 +43,8 @@ export function wordsFromSegments(segments = []) {
   return normalizeWords(words).map(w => ({ ...w, estimated: true }));
 }
 
+const CJK_SENTENCE_END = /[。！？]["”')\]」』）]?$/;
+
 /** Readable caption cues from words: breaks at sentence ends, pauses, length and duration. */
 export function wordsToCaptions(words, sourceIndex, { maxChars = 42, maxSeconds = 3.2, pause = 0.6, breakBefore = new Set() } = {}) {
   const cues = []; let cur = null;
@@ -52,7 +54,7 @@ export function wordsToCaptions(words, sourceIndex, { maxChars = 42, maxSeconds 
     if (cur && (breakBefore.has(i) || w.start - cur.end > pause || (cur.words.join(' ') + ' ' + text).length > maxChars || w.end - cur.start > maxSeconds)) flush();
     if (!cur) cur = { start: w.start, end: w.end, words: [], timed: [] };
     cur.words.push(text); cur.timed.push({ start: round(w.start), end: round(w.end), text: text.slice(0, 40) }); cur.end = w.end;
-    if (/[.!?…]$/.test(text) && cur.words.join(' ').length > 12) flush();
+    if (CJK_SENTENCE_END.test(text) || (/[.!?…]$/.test(text) && cur.words.join(' ').length > 12)) flush();
   });
   flush();
   for (let i = 0; i < cues.length - 1; i++) if (cues[i].end > cues[i + 1].start) cues[i].end = Math.max(cues[i].start + 0.3, cues[i + 1].start - 0.02);

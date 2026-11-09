@@ -25,6 +25,24 @@ test('captions carry word timings through normalize and mapping', () => {
   assert.deepEqual(cues[0].words.map(w => w.text), ['Hi', 'there.']);
 });
 
+test('transcript captions split short Chinese and Japanese sentences at full-width punctuation', () => {
+  const chinese = ['你好。', '我们', '开始', '吧！', '今天', '天气', '很好。', '明天', '见。'];
+  const japanese = ['「そうです。」', '『本当？』', '（はい！）', '“またね。”', '次へ'];
+  for (const [texts, expected] of [
+    [chinese, ['你好。', '我们 开始 吧！', '今天 天气 很好。', '明天 见。']],
+    [japanese, japanese],
+  ]) {
+    const words = texts.map((text, i) => ({ start: i * 0.4, end: i * 0.4 + 0.35, text }));
+    assert.deepEqual(wordsToCaptions(words, 0).map(cue => cue.text), expected);
+  }
+});
+
+test('transcript captions keep the existing English sentence boundaries', () => {
+  const words = ['Hi.', 'This', 'continues.', '“This', 'ends.”', 'Next', 'one.']
+    .map((text, i) => ({ start: i * 0.4, end: i * 0.4 + 0.35, text }));
+  assert.deepEqual(wordsToCaptions(words, 0).map(cue => cue.text), ['Hi. This continues.', '“This ends.” Next one.']);
+});
+
 test('ASS animated captions: karaoke, pop, highlight, words; text is neutralised', () => {
   const cues = [{ start: 1, end: 3, text: 'Lock the {target}', words: [{ start: 1, end: 1.5, text: 'Lock' }, { start: 1.6, end: 2, text: 'the' }, { start: 2.1, end: 3, text: '{target}\\N' }] }];
   const k = buildAss(cues, { width: 1080, height: 1920, animation: 'karaoke', colors: { accent: '#FFD84D' } });
