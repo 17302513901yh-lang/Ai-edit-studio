@@ -40,6 +40,23 @@ test('ASS animated captions: karaoke, pop, highlight, words; text is neutralised
   assert.match(buildAss([{ start: 0, end: 1, text: 'static' }], { animation: 'none', style: 'box' }), /,3,\d+,0,2,/, 'box style uses an opaque box');
 });
 
+test('ASS captions wrap a word longer than maxChars instead of running off screen', () => {
+  const zh = '这是一个非常长的中文字幕句子它没有任何空格所以永远不会换行我们看看会发生什么吧';
+  const url = 'https://example.com/a-very-long-path/that-keeps-going';
+  const dialogueLines = doc => (doc.match(/^Dialogue: .+$/gm) ?? []).map(d => d.replace(/^Dialogue: 0,[^,]+,[^,]+,Cap,,0,0,0,,/, '').replace(/\{[^}]*\}/g, ''));
+  for (const animation of ['none', 'karaoke', 'pop', 'words', 'highlight']) {
+    for (const [w, h] of [[1920, 1080], [1080, 1920]]) {
+      const vertical = h > w, big = animation === 'pop' || animation === 'words';
+      const max = vertical ? (big ? 11 : 16) : (big ? 20 : 30);
+      const doc = buildAss([{ start: 0, end: 3, text: zh }, { start: 3, end: 6, text: url }], { width: w, height: h, animation });
+      for (const line of dialogueLines(doc).flatMap(t => t.split('\\N'))) assert.ok([...line].length <= max, `${animation} ${w}x${h}: ${[...line].length} chars > ${max}: ${line}`);
+    }
+  }
+  const broken = buildAss([{ start: 0, end: 3, text: zh }], { animation: 'karaoke' }).match(/\S+\\N\S+/);
+  assert.ok(broken, 'the long CJK line is broken with \\N');
+  assert.ok(!broken[0].includes(' '), 'the break sits inside the word, not at a space');
+});
+
 test('clip finder: sentence-aligned, ranked, non-overlapping', () => {
   const words = [];
   for (let i = 0; i < 120; i++) words.push({ start: i * 0.5, end: i * 0.5 + 0.4, text: i % 10 === 9 ? `w${i}.` : `w${i}` });

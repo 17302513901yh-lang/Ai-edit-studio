@@ -18,10 +18,20 @@ export const assText = value => String(value ?? '').replace(/[{}\\]/g, m => ({ '
 /** Split words into display lines of at most `max` characters (used for \N breaks). */
 function lineBreaks(words, max) {
   const breaks = new Set(); let len = 0;
-  words.forEach((w, i) => { const add = (len ? 1 : 0) + w.text.length; if (len && len + add > max) { breaks.add(i); len = w.text.length; } else len += add; });
+  words.forEach((w, i) => { const add = (len ? (w.gap === '' ? 0 : 1) : 0) + w.text.length; if (len && len + add > max) { breaks.add(i); len = w.text.length; } else len += add; });
   return breaks;
 }
-function joinWords(words, breaks, render) { return words.map((w, i) => `${i && breaks.has(i) ? '\\N' : i ? ' ' : ''}${render(w, i)}`).join(''); }
+function joinWords(words, breaks, render) { return words.map((w, i) => `${i && breaks.has(i) ? '\\N' : i ? (w.gap ?? ' ') : ''}${render(w, i)}`).join(''); }
+/** Cut words longer than `max` into ≤max pieces that keep the original timing, so lineBreaks can wrap inside them. */
+function explodeLongWords(words, max) {
+  const out = [];
+  words.forEach((w, i) => {
+    const chars = [...w.text];
+    if (chars.length <= max) { out.push(w); return; }
+    for (let k = 0; k * max < chars.length; k++) out.push({ ...w, text: chars.slice(k * max, (k + 1) * max).join(''), gap: k ? '' : i ? ' ' : undefined });
+  });
+  return out;
+}
 
 /**
  * cues: timeline-timed [{start,end,text,words:[{start,end,text}]}] (words optional).
@@ -56,7 +66,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
   const word = w => assText(upper ? w.text.toUpperCase() : w.text);
   const maxChars = vertical ? (big ? 11 : 16) : (big ? 20 : 30);
   for (const cue of cues) {
-    const words = (cue.words?.length ? cue.words : [{ start: cue.start, end: cue.end, text: cue.text }]).filter(w => w.text);
+    const words = explodeLongWords((cue.words?.length ? cue.words : [{ start: cue.start, end: cue.end, text: cue.text }]).filter(w => w.text), maxChars);
     if (!words.length) continue;
     if (animation === 'none') { add(cue.start, cue.end, joinWords(words, lineBreaks(words, maxChars), word)); continue; }
     // Group into chunks: whole cue for karaoke/highlight, 1 word for "words", up to 3 short words for pop.
