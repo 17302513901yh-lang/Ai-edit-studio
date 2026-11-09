@@ -22,15 +22,31 @@ function lineBreaks(words, max) {
   return breaks;
 }
 function joinWords(words, breaks, render) { return words.map((w, i) => `${i && breaks.has(i) ? '\\N' : i ? (w.gap ?? ' ') : ''}${render(w, i)}`).join(''); }
-/** Cut words longer than `max` into ≤max pieces that keep the original timing, so lineBreaks can wrap inside them. */
+/** Cut words longer than `max` into ≤max pieces, each taking its slice of the word's time, so no piece is empty. */
 function explodeLongWords(words, max) {
   const out = [];
-  words.forEach((w, i) => {
+  words.forEach(w => {
     const chars = [...w.text];
     if (chars.length <= max) { out.push(w); return; }
-    for (let k = 0; k * max < chars.length; k++) out.push({ ...w, text: chars.slice(k * max, (k + 1) * max).join(''), gap: k ? '' : i ? ' ' : undefined });
+    const pieces = Math.ceil(chars.length / max), span = (w.end - w.start) / pieces;
+    for (let k = 0; k < pieces; k++) out.push({ ...w, start: w.start + span * k, end: w.start + span * (k + 1), text: chars.slice(k * max, (k + 1) * max).join(''), gap: k ? '' : w.gap });
   });
   return out;
+}
+/** Words of a cue without word timings: one word while it fits, otherwise split at spaces so it wraps between words. */
+function textWords(cue, max) {
+  const text = String(cue.text ?? '');
+  if ([...text].length <= max) return text ? [{ start: cue.start, end: cue.end, text }] : [];
+  const parts = text.split(/\s+/).filter(Boolean);
+  if (parts.length < 2) return [{ start: cue.start, end: cue.end, text }];
+  const total = parts.reduce((n, p) => n + [...p].length, 0) || 1;
+  let at = cue.start;
+  return parts.map((p, i) => {
+    const end = i === parts.length - 1 ? cue.end : at + ((cue.end - cue.start) * [...p].length) / total;
+    const w = { start: at, end, text: p };
+    at = end;
+    return w;
+  });
 }
 
 /**
@@ -66,15 +82,16 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
   const word = w => assText(upper ? w.text.toUpperCase() : w.text);
   const maxChars = vertical ? (big ? 11 : 16) : (big ? 20 : 30);
   for (const cue of cues) {
-    const words = explodeLongWords((cue.words?.length ? cue.words : [{ start: cue.start, end: cue.end, text: cue.text }]).filter(w => w.text), maxChars);
+    const words = explodeLongWords(cue.words?.length ? cue.words.filter(w => w.text) : textWords(cue, maxChars), maxChars);
     if (!words.length) continue;
     if (animation === 'none') { add(cue.start, cue.end, joinWords(words, lineBreaks(words, maxChars), word)); continue; }
     // Group into chunks: whole cue for karaoke/highlight, 1 word for "words", up to 3 short words for pop.
     const chunks = [];
     if (animation === 'words') words.forEach(w => chunks.push([w]));
     else if (animation === 'pop') {
+      const width = ws => ws.reduce((n, x, i) => n + (i && x.gap !== '' ? 1 : 0) + [...x.text].length, 0);
       let cur = [];
-      for (const w of words) { if (cur.length && (cur.length >= (vertical ? 2 : 3) || [...cur, w].map(x => x.text).join(' ').length > maxChars)) { chunks.push(cur); cur = []; } cur.push(w); }
+      for (const w of words) { if (cur.length && (cur.length >= (vertical ? 2 : 3) || width([...cur, w]) > maxChars)) { chunks.push(cur); cur = []; } cur.push(w); }
       if (cur.length) chunks.push(cur);
     } else chunks.push(words);
     chunks.forEach((chunk, k) => {
