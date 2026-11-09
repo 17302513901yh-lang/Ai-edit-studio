@@ -1,6 +1,6 @@
 {
   "name": "ai-edit-studio",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "mcpName": "io.github.laaielichter/ai-edit-studio",
   "type": "module",
   "description": "Local-first video editor for AI agents and creators: 59 MCP tools for auto-edit, shorts, captions, music and QC. Footage never leaves your computer.",

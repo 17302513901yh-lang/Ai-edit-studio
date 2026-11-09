@@ -1,6 +1,6 @@
 <p align="center"><img src="docs/site/assets/icon.png" alt="AI Edit Studio icon" width="96" height="96"></p>
 
-# AI Edit Studio — Director 0.11
+# AI Edit Studio — Director 0.12
 <p align="center"><b>Your footage. Your story. Your studio.</b><br>A local-first video editor for creators and their AI agents.</p>
 <p align="center"><a href="https://laaielichter.github.io/Ai-edit-studio/">Project website</a> · <a href="#install-and-start-windows-beta">Get started</a> · <a href="docs/INTEGRATIONS.md">Connect your agent</a> · <a href="CONTRIBUTING.md">Contribute</a></p>
 

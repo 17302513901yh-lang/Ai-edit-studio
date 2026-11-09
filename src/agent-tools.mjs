@@ -5,7 +5,7 @@ import { TEMPLATES } from './templates.mjs';
 import { LIMITS } from '../public/edit-ops.js';
 import { STORY_GUIDE } from './story.mjs';
 const T = LIMITS.editSeconds, S = LIMITS.sourceSeconds, SRC = { type: 'integer', minimum: 0, maximum: LIMITS.sources - 1 };
-export const STUDIO_VERSION = '0.11.0';
+export const STUDIO_VERSION = '0.12.0';
 
 const number = (minimum, maximum) => ({ type: 'number', minimum, maximum });
 const string = (maxLength = 1000) => ({ type: 'string', maxLength });
