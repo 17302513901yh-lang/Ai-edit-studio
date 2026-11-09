@@ -27,6 +27,19 @@ test('a name with no Latin letters is refused with a reason', async () => {
   );
 });
 
+test('short hex colours are saved as uppercase six-digit colours', async () => {
+  const saved = await saveBrand({ name: 'Studio', primary: '#FFF', accent: 'fff', text: '#a1B' });
+  const stored = await getBrand(saved.id);
+  assert.deepEqual([stored.primary, stored.accent, stored.text], ['#FFFFFF', '#FFFFFF', '#AA11BB']);
+  assert.equal((await normalizeBrand({ name: 'Studio', text: 'ffb400' })).text, '#FFB400');
+});
+
+test('invalid hex colours still report INVALID_BRAND', async () => {
+  for (const text of ['#FFFF', 'red', '#GGG']) {
+    await assert.rejects(() => normalizeBrand({ name: 'Studio', text }), { code: 'INVALID_BRAND' });
+  }
+});
+
 test('a kit saved under the old id is still found', async () => {
   const dir = path.join(root, 'studio', 'brands');
   await fs.mkdir(dir, { recursive: true });

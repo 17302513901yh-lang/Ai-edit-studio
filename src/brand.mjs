@@ -11,8 +11,12 @@ const legacySlug = name => String(name ?? '').toLowerCase().replace(/[^a-z0-9]+/
 const slug = name => legacySlug(String(name ?? '').normalize('NFKD').replace(/[\u0300-\u036f]/g, ''));
 const hex = (v, fallback, name) => {
   if (v === undefined || v === '') return fallback;
-  if (!/^#?[0-9a-fA-F]{6}$/.test(String(v))) throw new StudioError('INVALID_BRAND', `${name}: use a hex colour like #FFB400.`);
-  return `#${String(v).replace('#', '').toUpperCase()}`;
+  const digits = String(v).replace(/^#/, '');
+  if (!/^(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(digits)) {
+    throw new StudioError('INVALID_BRAND', `${name}: use a hex colour like #FFB400.`);
+  }
+  const expanded = digits.length === 3 ? digits.replace(/./g, '$&$&') : digits;
+  return `#${expanded.toUpperCase()}`;
 };
 const num = (v, d, a, b, name) => {
   const n = v === undefined || v === '' ? d : Number(v);
