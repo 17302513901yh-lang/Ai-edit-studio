@@ -58,6 +58,52 @@ test('ASS animated captions: karaoke, pop, highlight, words; text is neutralised
   assert.match(buildAss([{ start: 0, end: 1, text: 'static' }], { animation: 'none', style: 'box' }), /,3,\d+,0,2,/, 'box style uses an opaque box');
 });
 
+test('ASS captions wrap a word longer than maxChars instead of running off screen', () => {
+  const zh = '这是一个非常长的中文字幕句子它没有任何空格所以永远不会换行我们看看会发生什么吧';
+  const url = 'https://example.com/a-very-long-path/that-keeps-going';
+  const dialogueLines = doc => (doc.match(/^Dialogue: .+$/gm) ?? []).map(d => d.replace(/^Dialogue: 0,[^,]+,[^,]+,Cap,,0,0,0,,/, '').replace(/\{[^}]*\}/g, ''));
+  for (const animation of ['none', 'karaoke', 'pop', 'words', 'highlight']) {
+    for (const [w, h] of [[1920, 1080], [1080, 1920]]) {
+      const vertical = h > w, big = animation === 'pop' || animation === 'words';
+      const max = vertical ? (big ? 11 : 16) : (big ? 20 : 30);
+      const doc = buildAss([{ start: 0, end: 3, text: zh }, { start: 3, end: 6, text: url }], { width: w, height: h, animation });
+      for (const line of dialogueLines(doc).flatMap(t => t.split('\\N'))) assert.ok([...line].length <= max, `${animation} ${w}x${h}: ${[...line].length} chars > ${max}: ${line}`);
+    }
+  }
+  const broken = buildAss([{ start: 0, end: 3, text: zh }], { animation: 'karaoke' }).match(/\S+\\N\S+/);
+  assert.ok(broken, 'the long CJK line is broken with \\N');
+  assert.ok(!broken[0].includes(' '), 'the break sits inside the word, not at a space');
+});
+
+test('ASS broken words keep every character in every animation', () => {
+  const zh = '这是一个非常长的中文字幕句子它没有任何空格所以永远不会换行我们看看会发生什么吧';
+  const shown = doc => (doc.match(/^Dialogue: .+$/gm) ?? []).map(d => d.replace(/^Dialogue: 0,[^,]+,[^,]+,Cap,,0,0,0,,/, '').replace(/\{[^}]*\}/g, '').replace(/\\N/g, ''));
+  for (const animation of ['none', 'karaoke', 'pop', 'words', 'highlight']) {
+    for (const [w, h] of [[1920, 1080], [1080, 1920]]) {
+      const doc = buildAss([{ start: 0, end: 3, text: zh, words: cueWords({ start: 0, end: 3, text: zh }) }], { width: w, height: h, animation });
+      const texts = shown(doc);
+      assert.ok(texts.length, `${animation} ${w}x${h}: events are emitted`);
+      const visible = texts.join('');
+      for (const ch of new Set([...zh])) assert.ok(visible.includes(ch), `${animation} ${w}x${h}: character ${ch} is shown`);
+      if (animation === 'words') assert.equal(visible, zh, `${w}x${h}: word-by-word shows each piece exactly once, in order`);
+      for (const text of texts) assert.ok(text.length, `${animation} ${w}x${h}: no empty event`);
+    }
+  }
+});
+
+test('ASS captions without word timings wrap at spaces and stay byte-identical when short', () => {
+  const text = 'Hello world this is a normal caption';
+  const lines = doc => (doc.match(/^Dialogue: .+$/gm) ?? []).map(d => d.replace(/^Dialogue: 0,[^,]+,[^,]+,Cap,,0,0,0,,/, ''));
+  const wrapped = lines(buildAss([{ start: 1, end: 3, text }], { animation: 'none' }))[0].split('\\N');
+  assert.ok(wrapped.length > 1, 'the long caption wraps');
+  assert.equal(wrapped.join(' '), text, 'it only replaced spaces with \\N, never cut a word');
+  for (const line of wrapped) assert.ok([...line].length <= 30, `line fits: ${line}`);
+  assert.match(buildAss([{ start: 1, end: 2, text: 'A short caption' }], { animation: 'none' }), /^Dialogue: 0,0:00:01\.00,0:00:02\.00,Cap,,0,0,0,,A short caption$/m, 'an ordinary cue renders exactly as before');
+  for (const animation of ['karaoke', 'pop', 'words', 'highlight']) {
+    assert.equal((buildAss([{ start: 1, end: 2, text: 'A short caption' }], { animation }).match(/^Dialogue:/gm) ?? []).length, 1, `${animation}: one event, as before`);
+  }
+});
+
 test('clip finder: sentence-aligned, ranked, non-overlapping', () => {
   const words = [];
   for (let i = 0; i < 120; i++) words.push({ start: i * 0.5, end: i * 0.5 + 0.4, text: i % 10 === 9 ? `w${i}.` : `w${i}` });
