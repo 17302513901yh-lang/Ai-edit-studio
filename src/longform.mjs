@@ -298,19 +298,23 @@ export function exportTimeline({ format, clips, sources, options = {}, name = 'E
   }
   if (format === 'edl') {
     const tc = s => df ? dropFrameTimecode(Math.round(s * num / den), base) : timecode(s, fps);
+    // The record hour is a whole hour of the timecode clock, not 3600 s of real time: only drop-frame rates
+    // turn 3600 s into 01:00:00;xx by seconds, so at non-drop rates the hour is a frame offset (base * 3600 frames).
+    const ndFrameTc = f => { const ff = f % base, t = Math.floor(f / base); return `${pad2(Math.floor(t / 3600))}:${pad2(Math.floor(t / 60) % 60)}:${pad2(t % 60)}:${pad2(ff)}`; };
+    const recTc = s => df ? tc(3600 + s) : ndFrameTc(base * 3600 + Math.round(s * num / den));
     const lines = [`TITLE: ${name.replace(/[^\x20-\x7e]/g, '').slice(0, 60) || 'EDIT'}`, `FCM: ${df ? 'DROP FRAME' : 'NON-DROP FRAME'}`, ''];
     rows.forEach((r, i) => {
       const src = sources[r.sourceIndex], reel = `AX`, track = src?.hasAudio ? 'AA/V' : 'V   ';
       const recIn = 3600 + r.visibleStart, recOut = 3600 + r.visibleEnd;
       const srcIn = r.start + (r.visibleStart - r.timelineStart) * (r.speed || 1), srcOut = srcIn + (recOut - recIn) * (r.speed || 1);
-      lines.push(`${String(i + 1).padStart(3, '0')}  ${reel.padEnd(8)} ${track}  C        ${tc(srcIn)} ${tc(srcOut)} ${tc(recIn)} ${tc(recOut)}`);
+      lines.push(`${String(i + 1).padStart(3, '0')}  ${reel.padEnd(8)} ${track}  C        ${tc(srcIn)} ${tc(srcOut)} ${recTc(r.visibleStart)} ${recTc(r.visibleEnd)}`);
       if ((r.speed ?? 1) !== 1) lines.push(`M2   ${reel.padEnd(8)}     ${(num / den * r.speed).toFixed(1).padStart(5, '0')}    ${tc(srcIn)}`);
       lines.push(`* FROM CLIP NAME: ${(src?.name ?? 'source').replace(/[^\x20-\x7e]/g, '_')}`);
       if (r.label) lines.push(`* COMMENT: ${r.label.replace(/[^\x20-\x7e]/g, '_')}`);
       if (r.transition && r.transition !== 'cut') lines.push(`* TRANSITION IN: ${r.transition} ${r.overlapIn.toFixed(2)} s (cut in this EDL)`);
       lines.push('');
     });
-    for (const m of options.markers ?? []) lines.push(`* MARKER ${tc(3600 + m.time)}: ${(m.label || '').replace(/[^\x20-\x7e]/g, '_')}`);
+    for (const m of options.markers ?? []) lines.push(`* MARKER ${recTc(m.time)}: ${(m.label || '').replace(/[^\x20-\x7e]/g, '_')}`);
     return { extension: 'edl', mime: 'text/plain', content: lines.join('\r\n') };
   }
   if (format === 'csv') {

@@ -246,6 +246,11 @@ test('timeline export: NTSC rates 23.976/29.97/59.94 export at their real frame 
   const edl30 = exportTimeline({ format: 'edl', clips, sources, options: {}, fps: 30 }).content;
   assert.match(edl30, /FCM: NON-DROP FRAME/);
   assert.match(edl30, /01:00:00:00 01:00:04:00/);
+  const edl23976 = exportTimeline({ format: 'edl', clips, sources, options: {}, fps: 23.976 }).content;
+  assert.match(edl23976, /FCM: NON-DROP FRAME/);
+  assert.match(edl23976, /C        00:00:00:00 00:00:04:00 01:00:00:00 01:00:04:00/); // the record hour is a whole timecode hour at non-drop rates too
+  const marks23976 = exportTimeline({ format: 'edl', clips: [{ id: 'm', sourceIndex: 0, start: 0, end: 4 }], sources, options: { markers: [{ time: 2, label: 'note' }] }, fps: 23.976 }).content;
+  assert.match(marks23976, /\* MARKER 01:00:02:00: note/); // markers use the same record clock
 });
 
 test('timeline export: OTIO carries transitions as Transition.1 items between the clips', () => {
