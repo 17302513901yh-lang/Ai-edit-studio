@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **The CSV shot list is spreadsheet-safe**: a label, section or source name that starts with `=`, `+`, `-` or `@` (or a tab or carriage return) gets a leading `'` inside the quotes, so Excel and LibreOffice read it as text instead of a formula; numbers stay numbers (#59).
 - **Chinese and Japanese clips follow sentence boundaries**: the clip finder recognises full-width sentence endings, including those before a closing quote or parenthesis (#51).
 - **Long thumbnail and cover titles show an ellipsis** when more than three wrapped lines are needed (#48).
 - **SRT import drops ASS override tags** such as `{\an8}` or `{\i1}`, so they no longer show up as text in captions (#56).
