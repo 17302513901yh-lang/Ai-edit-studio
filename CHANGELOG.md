@@ -29,6 +29,7 @@
 - **MP4 chapters**: full renders embed one chapter per section (or labelled marker), with the same times as the chapters export plus any brand intro; `options.chapters:"off"` turns it off and previews and range renders get none (#41).
 - **`node cli.mjs studio <tool> --help` and typed flags**: every top-level tool argument works as a kebab-case flag (`--timeout-seconds 30`, `--export-id`), converted from the tool's schema, and an unknown flag is refused with the list of valid ones (#44).
 - **Platform drafts keep the call to action and hashtags**: a long brief is shortened on a whole word to make room, instead of the end of the draft being cut off (#50).
+- **Hashtags that differ only in case appear once** in publish drafts, so repeated tags no longer push other tags out (#47).
 
 ### Thanks
 

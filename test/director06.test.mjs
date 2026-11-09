@@ -1,10 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { applyOperations, mergeRanges, subtractRanges, totalDuration, coreClip } from '../public/edit-ops.js';
 import { normalizeWords, wordsFromSegments, wordsToCaptions, findFillers, isFiller, wordRanges, findPauses, matchPhrase, wordsInEdit, captionsFromEdit, transcriptText } from '../public/transcript.js';
 import { motionTrack, focusFromTrack, reframeOperations } from '../src/reframe.mjs';
 import { buildAutoEdit, usableIntervals, windows, hookCandidates, PLATFORMS } from '../src/autoedit.mjs';
-import { chapters, metadataDrafts, hashtags, frameQuality, wrapTitle } from '../src/publish.mjs';
+import { buildPublishPack, chapters, metadataDrafts, hashtags, frameQuality, wrapTitle } from '../src/publish.mjs';
+import { findFfmpegTools } from '../src/ffmpeg.mjs';
 import { parseWhisperJson, MODEL_ORDER } from '../src/transcribe.mjs';
 import { buildFilter, filterColors, captionDrawStyle, textDrawStyle } from '../src/render.mjs';
 import { normalizeTransform } from '../src/finishing.mjs';
@@ -180,6 +184,30 @@ test('publish: a long brief is shortened so the call to action and the hashtags 
   const words = metadataDrafts({ title: 'T', brief: 'bravo '.repeat(60), platforms: ['steam'] });
   assert.ok(words.steam.description.length <= 300);
   assert.ok(words.steam.description.endsWith('bravo…'), words.steam.description.slice(-12));
+});
+
+test('publish drafts deduplicate hashtags before applying each platform limit', () => {
+  const tags = ['GameDev', 'Shorts', ...hashtags('GameDev trailer shorts')];
+  const d = metadataDrafts({ title: 'GameDev trailer', tags, platforms: ['shorts'] });
+  assert.deepEqual(d.shorts.hashtags, ['#shorts', '#GameDev', '#trailer']);
+  const x = metadataDrafts({ title: 'T', tags: ['GameDev', 'gamedev', 'Indie'], platforms: ['x'] }).x;
+  assert.deepEqual(x.hashtags, ['#GameDev', '#Indie']);
+});
+
+test('publish pack deduplicates brand and title hashtags before taking six', async t => {
+  let tools; try { tools = findFfmpegTools(); } catch { return t.skip('FFmpeg not available'); }
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aes-publish-tags-'));
+  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  const file = path.join(dir, 'still.ppm');
+  await fs.writeFile(file, 'P3\n2 2\n255\n255 0 0  0 255 0\n0 0 255  255 255 255\n');
+  const project = {
+    id: 'test', revision: 1, sources: [{ file, still: true }],
+    options: { title: 'GameDev trailer launch' },
+    plan: { clips: [{ id: 'clip', sourceIndex: 0, start: 0, end: 2 }] }
+  };
+  const brand = { hashtags: ['GameDev', 'GAMEDEV', 'Indie', 'INDIE', 'DevLog', 'DEVLOG'] };
+  const pack = await buildPublishPack(project, path.join(dir, 'pack'), { platforms: ['youtube'], thumbnails: 1 }, { brand, tools });
+  assert.deepEqual(pack.drafts.youtube.hashtags, ['#GameDev', '#Indie', '#DevLog', '#trailer', '#launch']);
 });
 
 test('brand colours stay numeric in filters', () => {
