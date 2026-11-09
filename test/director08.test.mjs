@@ -198,6 +198,8 @@ test('timeline export: CSV text cells that would read as formulas are quoted', (
   assert.match(csv[1], /"cam","0\.000","4\.000"/); // numeric columns stay numbers
   const plain = exportTimeline({ format: 'csv', clips: [{ id: 'c', sourceIndex: 0, start: 0, end: 4, label: 'Hello' }], sources, options: {} }).content.split('\r\n');
   assert.match(plain[1], /^"1","","Hello","cam"/); // ordinary labels are unchanged
+});
+
 test('timeline export: NTSC rates 23.976/29.97/59.94 export at their real frame rate', () => {
   const sources = [src(60)];
   const clips = [{ id: 'a', sourceIndex: 0, start: 0, end: 4 }, { id: 'b', sourceIndex: 0, start: 10, end: 14, speed: 1.5 }];
@@ -205,6 +207,24 @@ test('timeline export: NTSC rates 23.976/29.97/59.94 export at their real frame 
   assert.equal(dropFrameTimecode(1800, 30), '00:01:00;02');
   assert.equal(dropFrameTimecode(17982, 30), '00:10:00;00');
   assert.equal(dropFrameTimecode(3600, 60), '00:01:00;04');
+  // after the first minute boundary each 29.97 minute holds 1798 frames (3596 at 59.94)
+  assert.equal(dropFrameTimecode(3598, 30), '00:02:00;02');
+  assert.equal(dropFrameTimecode(3599, 30), '00:02:00;03');
+  assert.equal(dropFrameTimecode(1799, 30), '00:00:59;29');
+  assert.equal(dropFrameTimecode(7196, 60), '00:02:00;04');
+  // no minute except every tenth may start at a dropped frame number (;00/;01 at 29.97, ;00-;03 at 59.94)
+  for (const base of [30, 60]) {
+    const drop = base >= 60 ? 4 : 2;
+    for (let minute = 1; minute <= 120; minute++) {
+      if (minute % 10 === 0) continue;
+      const frameNumber = minute * base * 60 - minute * drop + Math.floor(minute / 10) * drop; // frames elapsed before this minute starts
+      for (let d = 0; d < drop; d++) {
+        const tc = dropFrameTimecode(frameNumber + d, base);
+        const ff = Number(tc.slice(-2));
+        assert.ok(ff >= drop, `minute ${minute} starts at a dropped frame number in ${tc}`);
+      }
+    }
+  }
   assert.equal(timecode(1.5, 29.97), '00:00:01:15'); // no floating-point frame counts
   assert.equal(timecode(10, 23.976), '00:00:10:00');
   const edl = exportTimeline({ format: 'edl', clips, sources, options: {}, fps: 29.97 }).content;

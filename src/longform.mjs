@@ -252,8 +252,9 @@ const FPS_RATES = new Map([[23.976, [24000, 1001]], [24, [24, 1]], [25, [25, 1]]
 const rateOf = fps => FPS_RATES.get(Number(fps)) ?? [Math.max(1, Math.round(Number(fps))) || 30, 1];
 /** SMPTE 12M drop-frame timecode for 29.97/59.94: frame numbers 0 and 1 (0–3 at 59.94) are skipped at the start of every minute except every tenth. */
 export function dropFrameTimecode(frames, base) {
-  const drop = base >= 60 ? 4 : 2, minutes = Math.floor(frames / (base * 60));
-  const fn = frames + drop * (minutes - Math.floor(minutes / 10));
+  const drop = base >= 60 ? 4 : 2, per10 = base * 600 - 9 * drop, perMin = base * 60 - drop;
+  const tens = Math.floor(frames / per10), rest = frames % per10;
+  const fn = frames + 9 * drop * tens + (rest > drop ? drop * Math.floor((rest - drop) / perMin) : 0);
   const ff = fn % base, total = Math.floor(fn / base);
   return `${pad2(Math.floor(total / 3600))}:${pad2(Math.floor(total / 60) % 60)}:${pad2(total % 60)};${pad2(ff)}`;
 }
@@ -334,7 +335,7 @@ export function exportTimeline({ format, clips, sources, options = {}, name = 'E
     options.narration ? { file: options.narration, name: 'Voice', at: Number(options.narrationStart) || 0, trim: Number(options.narrationTrimStart) || 0 } : null,
     options.music ? { file: options.music, name: 'Music', at: 0, trim: Number(options.musicTrimStart) || 0 } : null,
   ].filter(x => x && x.at < total).map(x => ({ ...x, duration: total - x.at }));
-  const frames = s => Math.round(s * fps);
+  const frames = s => Math.round(s * num / den); // integer rates keep den = 1, so nothing changes there
   if (format === 'fcpxml') {
     const used = [...new Set(rows.map(r => r.sourceIndex))];
     const assets = used.map(i => { const s = sources[i]; return `    <asset id="a${i}" name="${xml(s.name)}" start="0s" duration="${frames(s.duration) * den}/${num}s" hasVideo="1" hasAudio="${s.hasAudio ? 1 : 0}" format="r1"><media-rep kind="original-media" src="${xml(fileUrl(s.file))}"/></asset>`; }).join('\n');
