@@ -4,6 +4,7 @@
 
 - **Chinese and Japanese clips follow sentence boundaries**: the clip finder recognises full-width sentence endings, including those before a closing quote or parenthesis (#51).
 - **Long thumbnail and cover titles show an ellipsis** when more than three wrapped lines are needed (#48).
+- **SRT import drops ASS override tags** such as `{\an8}` or `{\i1}`, so they no longer show up as text in captions (#56).
 - **`node cli.mjs help` lists every studio command**, built from the tool list, so `music`, `apply` and `guide` show up and new tools appear by themselves (#13).
 - **Clearer file errors**: a rejected file now names the path you passed and the check that failed (not a regular file, the extension with the allowed list, or the size against the limit) (#14).
 - **A damaged or non-media file is named**: when ffprobe cannot read a video, still or audio file, the error is `UNSUPPORTED_MEDIA` with the file and ffprobe's reason, instead of "Process exited with code 1" (#19).
@@ -29,12 +30,12 @@
 
 ### Thanks
 
-- @bfs2021 for the generated help (#13), the long SRT/VTT transcript import (#20), the `=` flag fix (#27) the VTT entity decoding (#40) and the brief that makes room for the call to action and hashtags (#50).
+- @bfs2021 for the generated help (#13), the long SRT/VTT transcript import (#20), the `=` flag fix (#27) the VTT entity decoding (#40) and the brief that makes room for the call to action and hashtags (#50) and the ASS override clean-up in SRT import (#65).
 - @wized2 for the clearer file errors (#14) and the named probe failures (#19).
 - @tnalbant for the accent-folding brand kit ids that keep old kits readable (#29) and the request-file check (#28).
 - @DaniLlano for the chapter fix (#30), the preview shapes (#31), the safer speech setup (#32), OTIO transitions (#35), the music and story pointers for agents (#36), the SRT time fix (#43), the `bars` scene (#42), MP4 chapters (#41) and the schema-derived CLI flags with per-tool help (#44).
 - @Aaqibhafeezkhan for the troubleshooting entries and their error-code test (#37), the tool-count and version sync with its docs test (#34) and the SRT/VTT timeline export (#33).
-- @Daiyuanranfeng for the Chinese and Japanese sentence endings in the clip finder (#51) and the shorthand hex colours for brand kits (#49).
+- @Daiyuanranfeng for the Chinese and Japanese sentence endings in the clip finder (#51), the shorthand hex colours for brand kits (#49) and the ellipsis on cut-off cover titles (#54).
 
 ## 0.11.0 — story documents
 
