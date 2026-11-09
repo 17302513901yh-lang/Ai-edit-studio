@@ -1,7 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.12.0 — captions, chapters and a friendlier CLI
 
+Better subtitles in and out, chapters inside the MP4, exact NTSC frame rates and a CLI that explains itself. 59 tools, nothing removed.
+
+- **Animated captions wrap long words and long lines**: a word longer than the line (a URL, a long German compound, a Chinese or Japanese line) is cut into pieces that each keep their share of the word's time, and a cue without word timings wraps between words instead of running off the screen (#57).
+- **The YouTube chapters export warns when YouTube would ignore the list**: fewer than three chapters, or a chapter shorter than 10 s, gives a `warnings` list next to the unchanged text (#60).
 - **The CSV shot list is spreadsheet-safe**: a label, section or source name that starts with `=`, `+`, `-` or `@` (or a tab or carriage return) gets a leading `'` inside the quotes, so Excel and LibreOffice read it as text instead of a formula; numbers stay numbers (#59).
 - **NTSC frame rates export exactly**: 23.976, 29.97 and 59.94 keep their real rate instead of rounding to 24/30/60 — 29.97 and 59.94 write drop-frame EDLs (`FCM: DROP FRAME`, `;` timecodes) and a `1001/30000s` FCPXML timebase, 23.976 a 24-frame non-drop EDL, OTIO the fractional rate, and integer rates are unchanged (#63).
 - **Chinese and Japanese clips follow sentence boundaries**: the clip finder recognises full-width sentence endings, including those before a closing quote or parenthesis (#51).
@@ -35,14 +39,14 @@
 
 ### Thanks
 
-- @bfs2021 for the generated help (#13), the long SRT/VTT transcript import (#20), the `=` flag fix (#27) the VTT entity decoding (#40) and the brief that makes room for the call to action and hashtags (#50) and the ASS override clean-up in SRT import (#65).
+- @bfs2021 for the generated help (#13), the long SRT/VTT transcript import (#20), the `=` flag fix (#27) the VTT entity decoding (#40) and the brief that makes room for the call to action and hashtags (#50) and the ASS override clean-up in SRT import (#65) and the wrapping of long words in animated captions (#74).
 - @wized2 for the clearer file errors (#14) and the named probe failures (#19).
 - @enidchen0125 for the case-insensitive hashtag dedupe in publish drafts (#64), their first contribution to AI Edit Studio.
-- @rahul05ranjan for the spreadsheet-safe CSV shot list (#66), their first contribution to AI Edit Studio.
+- @rahul05ranjan for the spreadsheet-safe CSV shot list (#66), the exact NTSC frame rates in the timeline export (#67) and the chapter warnings (#77); #66 was their first contribution to AI Edit Studio.
 - @tnalbant for the accent-folding brand kit ids that keep old kits readable (#29) and the request-file check (#28).
 - @DaniLlano for the chapter fix (#30), the preview shapes (#31), the safer speech setup (#32), OTIO transitions (#35), the music and story pointers for agents (#36), the SRT time fix (#43), the `bars` scene (#42), MP4 chapters (#41) and the schema-derived CLI flags with per-tool help (#44).
 - @Aaqibhafeezkhan for the troubleshooting entries and their error-code test (#37), the tool-count and version sync with its docs test (#34) and the SRT/VTT timeline export (#33).
-- @Daiyuanranfeng for the Chinese and Japanese sentence endings in the clip finder (#51), the shorthand hex colours for brand kits (#49), the ellipsis on cut-off cover titles (#54) and the Chinese and Japanese sentence ends in transcript captions (#69).
+- @Daiyuanranfeng for the Chinese and Japanese sentence endings in the clip finder (#51), the shorthand hex colours for brand kits (#49), the ellipsis on cut-off cover titles (#54), the Chinese and Japanese sentence ends in transcript captions (#69) and the escaping of `&`, `<` and `>` in VTT exports (#73).
 
 ## 0.11.0 — story documents
 
@@ -57,7 +61,7 @@
 
 - @wized2 for the 404 status codes (#12), the first outside contribution to AI Edit Studio.
 
-## Unreleased — every output size, npm package, open source
+## Earlier — every output size, npm package, open source
 
 - **All formats**: 720p (`hd`, no size cap), 1080p, 1440p, 4K and 21:9 ultrawide (`ultrawide`, 2560×1080, crops to
   fill the frame instead of black bars) as master; 9:16 at 720, 1080, 1440 and 4K; 1:1 and 4:5 at 720, 1080 and 1440.
@@ -71,7 +75,7 @@
   `publish-mcp.yml` lists a published npm version in the registry. Version 0.10.1 (first version with `mcpName`).
 - **Open source** under the MIT license. The Windows default data folder is now `Documents\AI Edit Studio`.
 
-## Unreleased — Claude Code + OpenAI Codex plugins, OpenAI API, installer and release zip, workflow skills
+## Earlier — Claude Code + OpenAI Codex plugins, OpenAI API, installer and release zip, workflow skills
 
 - **Installer for buyers**: `node cli.mjs install` (double-click `Install-AI-Edit-Studio.cmd`, or `./install.sh`)
   chooses the data folder once, checks FFmpeg (Windows/macOS: offers winget/Homebrew for Node and FFmpeg) and connects

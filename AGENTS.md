@@ -18,6 +18,14 @@ Set up every agent app at once: `node cli.mjs install` (see INSTALL.md). The ser
 the hidden daemon when needed; HTTP callers start it with `node server.mjs` or the start script.
 Send `X-Studio-Client: <your-agent-name>` on HTTP calls: the editor shows your name on every revision.
 
+## New in 0.12 — captions, chapters and a friendlier CLI (still 59 tools)
+
+- `studio_export_timeline {format:"srt"|"vtt"}` writes the captions of the timeline (cuts, speed changes and caption offsets
+  followed); `format:"chapters"` returns a `warnings` list when YouTube would ignore the list (under 3 chapters, or a
+  chapter under 10 s). Full renders embed MP4 chapters; `options.chapters:"off"` turns that off.
+- 23.976, 29.97 and 59.94 fps keep their exact rate in EDL, FCPXML and OTIO; 29.97 and 59.94 write drop-frame timecode.
+- `node cli.mjs studio <tool> --help` lists the arguments of a tool, and every top-level argument is a kebab-case flag.
+
 ## New in 0.11 — story documents (59 tools)
 
 - `studio_guide {topic:"story"}` returns the `aes.story/1` format with a complete example. `studio_apply {story, dryRun:true}`

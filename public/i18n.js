@@ -13,7 +13,7 @@ export const LANG = pickLanguage();
 export const LOCALE = LANG === 'nl' ? 'nl-NL' : 'en-GB';
 
 export const NL = {
- "DIRECTOR 0.11": "DIRECTOR 0.11",
+ "DIRECTOR 0.12": "DIRECTOR 0.12",
  "Speed up pauses ×2": "Pauzes ×2 versnellen",
  "Play pauses twice as fast instead of cutting them (without a transcript: the quiet stretches)": "Pauzes twee keer zo snel afspelen in plaats van wegknippen (zonder transcript: de stille stukken)",
  "Pauses sped up": "Pauzes versneld",

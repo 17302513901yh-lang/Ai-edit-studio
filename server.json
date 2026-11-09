@@ -7,12 +7,12 @@
     "url": "https://github.com/laaielichter/ai-edit-studio",
     "source": "github"
   },
-  "version": "0.11.0",
+  "version": "0.12.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "ai-edit-studio",
-      "version": "0.11.0",
+      "version": "0.12.0",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
