@@ -40,7 +40,7 @@ function cueFromBlock(block, sourceIndex) {
   const lines = block.split('\n'); if (/^\d+$/.test(lines[0].trim())) lines.shift();
   const times = lines.shift()?.split('-->');
   if (times?.length !== 2 || !lines.length) throw new Error('Invalid SRT block.');
-  return { sourceIndex, start: stamp(times[0]), end: stamp(times[1].trim().split(/\s+/)[0]), text: lines.join(' ').replace(/<[^>]*>/g, '') };
+  return { sourceIndex, start: stamp(times[0]), end: stamp(times[1].trim().split(/\s+/)[0]), text: lines.join(' ').replace(/<[^>]*>/g, '').replace(/\{\\[^}]*\}/g, '').trim() };
 }
 export function parseSrt(text, sourceIndex = 0) {
   if (text.length > 128 * 1024) throw new Error('SRT is too large (at most 128 KiB).');
