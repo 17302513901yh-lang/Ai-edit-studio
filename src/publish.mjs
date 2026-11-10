@@ -47,7 +47,11 @@ export function chapters(clips, options = {}) {
 
 export function hashtags(...texts) {
   const words = texts.join(' ').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').match(/[\p{L}\p{N}]{4,}/gu) ?? [];
-  const stop = new Set(['with', 'this', 'that', 'from', 'your', 'have', 'will', 'what', 'when', 'into', 'over', 'they', 'them', 'voor', 'naar', 'deze', 'met', 'maar', 'niet', 'zijn', 'wordt', 'worden', 'onze', 'jouw', 'heeft', 'more', 'than', 'just', 'like']);
+  const stop = new Set(['with', 'this', 'that', 'from', 'your', 'have', 'will', 'what', 'when', 'into', 'over', 'they', 'them', 'voor', 'naar', 'deze', 'met', 'maar', 'niet', 'zijn', 'wordt', 'worden', 'onze', 'jouw', 'heeft', 'more', 'than', 'just', 'like',
+    // common English and Dutch function words of 4+ letters (#61) — without them they fill the
+    // first five tags and push the real topic words out
+    'about', 'after', 'again', 'also', 'because', 'been', 'before', 'better', 'could', 'does', 'each', 'even', 'every', 'everything', 'here', 'make', 'many', 'much', 'only', 'other', 'some', 'such', 'their', 'there', 'these', 'thing', 'things', 'very', 'were', 'where', 'which', 'while', 'would',
+    'alles', 'beter', 'dingen', 'echt', 'enkele', 'hier', 'maken', 'nieuwe', 'omdat', 'veel', 'waar', 'want', 'werken', 'zelf', 'zoals']);
   const seen = new Set();
   return words.map(w => w.toLowerCase()).filter(w => !stop.has(w) && !/^\d+$/.test(w) && !seen.has(w) && seen.add(w)).slice(0, 5);
 }

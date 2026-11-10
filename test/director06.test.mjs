@@ -163,6 +163,9 @@ test('publish: chapters, drafts, hashtags and frame quality', () => {
   assert.deepEqual(chapters(clips.slice(0, 2), {}), []);
   const tags = hashtags('AH-64 Apache laser guided missiles', 'Our helicopter game');
   assert.ok(tags.includes('apache') && tags.includes('laser') && !tags.includes('our'));
+  // filler words stay out and the topic words survive (#61)
+  assert.deepEqual(hashtags('Everything about our new update', 'Here are some things that would make your base better and where to find them'), ['update', 'base', 'find']);
+  assert.deepEqual(hashtags('Alles over onze nieuwe update', 'Hier zijn enkele dingen die jouw basis beter maken, omdat ze echt werken'), ['update', 'basis']);
   const d = metadataDrafts({ title: 'Apache strike', brief: 'Cockpit footage.', cta: 'Wishlist now', chapterList: ch, tags, platforms: ['youtube', 'x', 'shorts'] });
   assert.equal(d.youtube.title, 'Apache strike'); assert.match(d.youtube.description, /00:15 Takeoff/);
   assert.ok(d.x.description.length <= 280); assert.ok(d.shorts.hashtags.includes('#shorts'));
