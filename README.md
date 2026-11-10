@@ -147,6 +147,8 @@ node cli.mjs doctor      # checks FFmpeg, encoder, storage and the (optional) sp
 node cli.mjs speech-setup --model base   # optional: local speech recognition (whisper.cpp + model, ~200 MB)
 ```
 
+Use `node cli.mjs --version` (or `-v` or `version`) to print the installed version, or `node cli.mjs -h` for help.
+
 FFmpeg/ffprobe are found on `PATH`, in `tools/ffmpeg/bin` under the app or data folder, or via `FFMPEG_PATH` / `FFPROBE_PATH`.
 
 **Storage.** Projects and renders go to the data folder: the one you chose in the installer, otherwise
