@@ -40,17 +40,23 @@ function srtBlocks(text) {
 function cueFromBlock(block, sourceIndex) {
   const lines = block.split('\n'); if (/^\d+$/.test(lines[0].trim())) lines.shift();
   const times = lines.shift()?.split('-->');
-  if (times?.length !== 2 || !lines.length) throw new Error('Invalid SRT block.');
-  return { sourceIndex, start: stamp(times[0]), end: stamp(times[1].trim().split(/\s+/)[0]), text: lines.join(' ').replace(/<[^>]*>/g, '').replace(/\{\\[^}]*\}/g, '').trim() };
+  if (times?.length !== 2) throw new Error('Invalid SRT block.');
+  const start = stamp(times[0]), end = stamp(times[1].trim().split(/\s+/)[0]);
+  const text = lines.join(' ').replace(/<[^>]*>/g, '').replace(/\{\\[^}]*\}/g, '').trim();
+  if (!text) return null; // A cue with a valid time line but no text is skipped, like parseVttCues.
+  return { sourceIndex, start, end, text };
 }
 export function parseSrt(text, sourceIndex = 0) {
   if (text.length > 128 * 1024) throw new Error('SRT is too large (at most 128 KiB).');
-  return normalizeCaptions(srtBlocks(text.replace(/^\uFEFF/, '')).map(block => cueFromBlock(block, sourceIndex)));
+  const blocks = srtBlocks(text.replace(/^\uFEFF/, ''));
+  const cues = blocks.map(block => cueFromBlock(block, sourceIndex)).filter(Boolean);
+  if (blocks.length && !cues.length) throw new Error('SRT has no captions.');
+  return normalizeCaptions(cues);
 }
 /** Transcript cues: the same SRT shape without the caption limits — a talk has thousands of
  * cues, and importTranscript already caps the file at 32 MiB. */
 export function parseSrtCues(text, sourceIndex = 0) {
-  return srtBlocks(text.replace(/^\uFEFF/, '')).map(block => cueFromBlock(block, sourceIndex));
+  return srtBlocks(text.replace(/^\uFEFF/, '')).map(block => cueFromBlock(block, sourceIndex)).filter(Boolean);
 }
 function vttStamp(value) {
   const m = value.trim().match(/^(?:(\d{2,}):)?([0-5]\d):([0-5]\d)\.(\d{3})$/);
