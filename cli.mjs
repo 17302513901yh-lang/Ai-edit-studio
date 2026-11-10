@@ -221,7 +221,16 @@ function help() {
 }
 
 async function main() {
-  const { positional, flags } = parseArguments(process.argv.slice(2));
+  const args = process.argv.slice(2);
+  if (args.length === 1) {
+    const [arg] = args;
+    if (arg === '-h') return help();
+    if (arg === '--version' || arg === '-v' || arg === 'version') {
+      const { name, version } = JSON.parse(fs.readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
+      return console.log(name + ' ' + version);
+    }
+  }
+  const { positional, flags } = parseArguments(args);
   const [command, subcommand, third] = positional;
   const jsonMode = boolFlag(flags.json, false);
   if (command === 'studio' && subcommand && flags.help) return console.log(studioHelp(subcommand));

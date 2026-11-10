@@ -25,6 +25,29 @@ test('help lists every studio tool', () => {
   }
 });
 
+test('version aliases print only the installed package version', async () => {
+  const { name, version } = JSON.parse(await fs.readFile(path.join(ROOT, 'package.json'), 'utf8'));
+  for (const alias of ['--version', '-v', 'version']) {
+    const result = spawnSync(process.execPath, [path.join(ROOT, 'cli.mjs'), alias], {
+      cwd: os.tmpdir(),
+      encoding: 'utf8',
+    });
+    assert.equal(result.status, 0, result.stderr || alias);
+    assert.equal(result.stdout, name + ' ' + version + '\n', alias);
+    assert.equal(result.stderr, '', alias);
+  }
+});
+
+test('-h prints the same top-level help as --help', () => {
+  const run = alias => spawnSync(process.execPath, [path.join(ROOT, 'cli.mjs'), alias], { encoding: 'utf8' });
+  const help = run('--help');
+  const short = run('-h');
+  assert.equal(help.status, 0, help.stderr);
+  assert.equal(short.status, 0, short.stderr);
+  assert.equal(short.stdout, help.stdout);
+  assert.equal(short.stderr, '');
+});
+
 test('parseArguments keeps everything after the first = in a flag value', () => {
   const { flags, positional } = parseArguments([
     '--title=Score=100',
