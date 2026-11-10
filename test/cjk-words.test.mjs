@@ -42,3 +42,32 @@ test('English and Dutch word handling is unchanged (#62)', () => {
   assert.deepEqual(matchPhrase(en, 'there friend'), [[1, 2]]);
   assert.deepEqual(splitWords('hello  there'), ['hello', 'there']);
 });
+
+test("language: 'auto' falls back to the script-based locale instead of throwing (#62 review)", () => {
+  // transcribeFile() defaults language to 'auto'; it must reach the segmenter
+  // as a usable locale, not as the 'auto' placeholder ('' and invalid tags too).
+  const zh = wordsFromSegments([{ start: 0, end: 4, text: '今天我们来做一个游戏。' }], 'auto');
+  assert.deepEqual(zh.map(w => w.text), ['今天', '我们', '来', '做', '一个', '游戏。']);
+  const ja = wordsFromSegments([{ start: 0, end: 4, text: '私たちはゲームを作ります。' }], 'auto');
+  assert.ok(ja.length > 4 && ja.at(-1).text.endsWith('。'));
+  for (const bad of ['auto', '', 'not a locale tag!']) {
+    assert.doesNotThrow(() => splitWords('今天我们来做一个游戏。', bad));
+    assert.ok(splitWords('今天我们来做一个游戏。', bad).length > 0);
+  }
+});
+
+test('no Intl.Segmenter: CJK falls back to one piece per character (#62 review)', async () => {
+  const saved = Intl.Segmenter;
+  try {
+    // Some browsers (Firefox before 125) ship without Intl.Segmenter.
+    Intl.Segmenter = undefined;
+    // A fresh module instance, so the per-locale segmenter cache from the
+    // tests above does not mask the missing constructor.
+    const fresh = await import('../public/transcript.js?nosegmenter');
+    assert.deepEqual(fresh.splitWords('今天我们'), ['今', '天', '我', '们']);
+    assert.deepEqual(fresh.splitWords('做一个游戏。'), ['做', '一', '个', '游', '戏。']); // punctuation attaches to the previous piece
+    assert.deepEqual(fresh.splitWords('Hi  there.'), ['Hi', 'there.']); // non-CJK path unchanged
+  } finally {
+    Intl.Segmenter = saved;
+  }
+});

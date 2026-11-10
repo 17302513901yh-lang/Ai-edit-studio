@@ -17,18 +17,50 @@ export const bare = text => String(text ?? '').toLowerCase().normalize('NFKD').r
 // instead of splitting on spaces. Hangul uses spaces and stays on the plain path.
 export const CJK_RE = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u;
 const hasCJK = text => CJK_RE.test(String(text ?? ''));
+const jaScript = /[\p{Script=Hiragana}\p{Script=Katakana}]/u;
+
+// One Segmenter per locale, built on first use and reused (a long talk segments
+// many of them). 'auto' (the transcription default) and other placeholder or
+// invalid values throw RangeError in the constructor, so each candidate falls
+// back to the script-based ja/zh choice; a missing Intl.Segmenter (older
+// browsers) falls through to the per-character path in splitWords.
+const segmenters = new Map();
+function cjkSegmenter(lang, t) {
+  for (const locale of [lang, jaScript.test(t) ? 'ja' : 'zh']) {
+    if (typeof locale !== 'string' || !locale || locale === 'auto') continue;
+    const cached = segmenters.get(locale);
+    if (cached) return cached;
+    try {
+      const segmenter = new Intl.Segmenter(locale, { granularity: 'word' });
+      segmenters.set(locale, segmenter);
+      return segmenter;
+    } catch { /* invalid tag, or no Intl.Segmenter: try the next candidate */ }
+  }
+  return null;
+}
 
 /** Word pieces of `text`: CJK text is segmented by dictionary, other text splits on whitespace. */
 export function splitWords(text, lang) {
   const t = String(text ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim();
   if (!t) return [];
   if (!hasCJK(t)) return t.split(' ').filter(Boolean);
-  const locale = lang ?? (/[\p{Script=Hiragana}\p{Script=Katakana}]/u.test(t) ? 'ja' : 'zh');
+  const segmenter = cjkSegmenter(lang, t);
   const out = [];
-  for (const { segment, isWordLike } of new Intl.Segmenter(locale, { granularity: 'word' }).segment(t)) {
-    if (!segment.trim()) continue;                    // whitespace between CJK words disappears
-    if (!isWordLike && out.length) { out[out.length - 1] += segment; continue; }  // punctuation attaches to the previous word
-    out.push(segment);
+  if (segmenter) {
+    for (const { segment, isWordLike } of segmenter.segment(t)) {
+      if (!segment.trim()) continue;                    // whitespace between CJK words disappears
+      if (!isWordLike && out.length) { out[out.length - 1] += segment; continue; }  // punctuation attaches to the previous word
+      out.push(segment);
+    }
+  } else {
+    // No Intl.Segmenter (e.g. Firefox before 125): one piece per CJK character,
+    // still attaching punctuation to the previous piece, so captions and search
+    // keep working instead of throwing.
+    for (const ch of t) {
+      if (/\s/.test(ch)) continue;
+      if (!CJK_RE.test(ch) && out.length) { out[out.length - 1] += ch; continue; }
+      out.push(ch);
+    }
   }
   return out.filter(Boolean);
 }
