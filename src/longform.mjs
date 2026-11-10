@@ -264,7 +264,7 @@ export function timecode(seconds, fps) {
   return `${pad2(Math.floor(s / 3600))}:${pad2(Math.floor(s / 60) % 60)}:${pad2(s % 60)}:${pad2(ff)}`;
 }
 const xml = v => String(v ?? '').replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' }[c]));
-const fileUrl = f => `file://${f.startsWith('/') ? '' : '/'}${encodeURI(f.replaceAll('\\', '/'))}`;
+const fileUrl = f => `file://${f.startsWith('/') ? '' : '/'}${encodeURI(f.replaceAll('\\', '/')).replace(/[#?]/g, c => encodeURIComponent(c))}`;
 /** Chapters shared by the chapters export and the MP4 render: sections first, else labelled markers.
  * `offset` is the length of a brand intro in front of the programme; the first chapter always starts at 0:00.
  * Marks at or past the end of the edit are dropped and each time gives one chapter, so 0 <= start < end <= programme end. */

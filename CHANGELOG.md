@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Timeline exports: escaped media URLs.** A `#` or `?` in a source file name is written as `%23` or `%3F` in the FCPXML `media-rep` `src` and the OTIO `target_url`, so editors open the clip instead of looking for a shorter path (#99).
+
 ## 0.12.0 — captions, chapters and a friendlier CLI
 
 Better subtitles in and out, chapters inside the MP4, exact NTSC frame rates and a CLI that explains itself. 59 tools, nothing removed.

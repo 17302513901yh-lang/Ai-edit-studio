@@ -194,6 +194,20 @@ test('timeline export: EDL, CSV, chapters, FCPXML and OTIO are well formed', () 
   assert.throws(() => exportTimeline({ format: 'aaf', clips, sources }), /format/);
 });
 
+test('timeline export: # and ? in a file name stay part of the media path', () => {
+  const sources = [src(10, { name: 'phone', file: '/media/my clip #1 & 100% é.mp4' }), src(10, { name: 'camera', file: 'C:\\media\\Take #3?.mp4' })];
+  const clips = [{ id: 'a', sourceIndex: 0, start: 0, end: 2 }, { id: 'b', sourceIndex: 1, start: 0, end: 2 }];
+  const fcp = exportTimeline({ format: 'fcpxml', clips, sources }).content;
+  assert.match(fcp, /src="file:\/\/\/media\/my%20clip%20%231%20&amp;%20100%25%20%C3%A9\.mp4"/);
+  assert.match(fcp, /src="file:\/\/\/C:\/media\/Take%20%233%3F\.mp4"/);
+  const otio = JSON.parse(exportTimeline({ format: 'otio', clips, sources }).content);
+  const urls = otio.tracks.children[0].children.map(c => c.media_references.DEFAULT_MEDIA.target_url);
+  assert.deepEqual(urls, ['file:///media/my%20clip%20%231%20&%20100%25%20%C3%A9.mp4', 'file:///C:/media/Take%20%233%3F.mp4']);
+  const [posix, windows] = urls.map(u => new URL(u));
+  assert.equal(posix.hash, ''); assert.equal(posix.search, ''); assert.equal(decodeURIComponent(posix.pathname), '/media/my clip #1 & 100% é.mp4');
+  assert.equal(windows.hash, ''); assert.equal(windows.search, ''); assert.equal(decodeURIComponent(windows.pathname), '/C:/media/Take #3?.mp4');
+});
+
 test('timeline export: CSV text cells that would read as formulas are quoted', () => {
   const sources = [src(60, { name: 'cam', file: '/m/a.mp4' })];
   const clips = [
