@@ -189,6 +189,23 @@ test('publish: a long brief is shortened so the call to action and the hashtags 
   assert.ok(words.steam.description.endsWith('bravo…'), words.steam.description.slice(-12));
 });
 
+test('publish: title and brief cuts never end in half an emoji', () => {
+  const loneSurrogate = s => /[\uD800-\uDBFF](?![\uDC00-\uDFFF])/.test(s);
+  // Emoji straddling the 100-unit title limit is dropped, not split.
+  const cutTitle = metadataDrafts({ title: `${'a'.repeat(99)}🎬 extra text`, brief: '', platforms: ['youtube'] });
+  assert.equal(cutTitle.youtube.title, 'a'.repeat(99));
+  assert.ok(!loneSurrogate(cutTitle.youtube.title));
+  // An emoji that fits entirely inside the limit is kept.
+  const fits = metadataDrafts({ title: `${'a'.repeat(98)}🎬`, brief: '', platforms: ['youtube'] });
+  assert.equal(fits.youtube.title, `${'a'.repeat(98)}🎬`);
+  // A brief shortened for x ends cleanly when the cut lands mid-emoji.
+  const brief = `${'a'.repeat(254)}🎬 tail words here to pad the brief out a bit more so it needs shortening`;
+  const x = metadataDrafts({ title: 'T', brief, cta: 'Wishlist now', tags: ['gamedev'], platforms: ['x'] });
+  assert.ok(x.x.description.length <= 280);
+  assert.ok(!loneSurrogate(x.x.description));
+  assert.match(x.x.description, /…/);
+});
+
 test('publish drafts deduplicate hashtags before applying each platform limit', () => {
   const tags = ['GameDev', 'Shorts', ...hashtags('GameDev trailer shorts')];
   const d = metadataDrafts({ title: 'GameDev trailer', tags, platforms: ['shorts'] });
