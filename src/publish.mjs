@@ -46,7 +46,7 @@ export function chapters(clips, options = {}) {
 }
 
 export function hashtags(...texts) {
-  const words = texts.join(' ').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').match(/[\p{L}\p{N}]{4,}/gu) ?? [];
+  const words = texts.join(' ').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').normalize('NFC').match(/[\p{L}\p{N}]{4,}/gu) ?? [];
   const stop = new Set(['with', 'this', 'that', 'from', 'your', 'have', 'will', 'what', 'when', 'into', 'over', 'they', 'them', 'voor', 'naar', 'deze', 'met', 'maar', 'niet', 'zijn', 'wordt', 'worden', 'onze', 'jouw', 'heeft', 'more', 'than', 'just', 'like']);
   const seen = new Set();
   return words.map(w => w.toLowerCase()).filter(w => !stop.has(w) && !/^\d+$/.test(w) && !seen.has(w) && seen.add(w)).slice(0, 5);

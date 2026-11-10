@@ -172,6 +172,19 @@ test('publish: chapters, drafts, hashtags and frame quality', () => {
   assert.equal(frameQuality(Buffer.alloc(160 * 90, 5)).mean, 5);
 });
 
+test('publish: hashtags preserve Japanese voiced kana', () => {
+  assert.deepEqual(
+    hashtags('新しいアップデートが公開されました', 'ゲームの新しいステージ'),
+    ['新しいアップデートが公開されました', 'ゲームの新しいステージ']
+  );
+
+  assert.deepEqual(hashtags('アップデート'), ['アップデート']);
+});
+
+test('publish: hashtags still fold Latin accents', () => {
+  assert.deepEqual(hashtags('Café CAFÉ résumé'), ['cafe', 'resume']);
+});
+
 test('publish: a long brief is shortened so the call to action and the hashtags still fit', () => {
   const d = metadataDrafts({ title: 'T', brief: 'word '.repeat(100), cta: 'Wishlist now', tags: ['gamedev', 'indie'], platforms: ['x', 'steam'] });
   assert.ok(d.x.description.length <= 280);
