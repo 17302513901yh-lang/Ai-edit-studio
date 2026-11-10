@@ -5,6 +5,8 @@
 Better subtitles in and out, chapters inside the MP4, exact NTSC frame rates and a CLI that explains itself. 59 tools, nothing removed.
 
 - **Animated captions wrap long words and long lines**: a word longer than the line (a URL, a long German compound, a Chinese or Japanese line) is cut into pieces that each keep their share of the word's time, and a cue without word timings wraps between words instead of running off the screen (#57).
+- **Publish drafts no longer turn common words into hashtags**: words such as "about", "here" and "some", and their Dutch counterparts, are skipped, while real topic words like "update" stay (#61).
+- **A title or brief cut at the limit never ends in half an emoji** (#79).
 - **The YouTube chapters export warns when YouTube would ignore the list**: fewer than three chapters, or a chapter shorter than 10 s, gives a `warnings` list next to the unchanged text (#60).
 - **The CSV shot list is spreadsheet-safe**: a label, section or source name that starts with `=`, `+`, `-` or `@` (or a tab or carriage return) gets a leading `'` inside the quotes, so Excel and LibreOffice read it as text instead of a formula; numbers stay numbers (#59).
 - **NTSC frame rates export exactly**: 23.976, 29.97 and 59.94 keep their real rate instead of rounding to 24/30/60 — 29.97 and 59.94 write drop-frame EDLs (`FCM: DROP FRAME`, `;` timecodes) and a `1001/30000s` FCPXML timebase, 23.976 a 24-frame non-drop EDL, OTIO the fractional rate, and integer rates are unchanged (#63).
@@ -41,8 +43,9 @@ Better subtitles in and out, chapters inside the MP4, exact NTSC frame rates and
 
 - @bfs2021 for the generated help (#13), the long SRT/VTT transcript import (#20), the `=` flag fix (#27) the VTT entity decoding (#40) and the brief that makes room for the call to action and hashtags (#50) and the ASS override clean-up in SRT import (#65) and the wrapping of long words in animated captions (#74).
 - @wized2 for the clearer file errors (#14) and the named probe failures (#19).
+- @khizzcr7 for cutting titles and briefs without splitting an emoji (#87), their first contribution to AI Edit Studio.
 - @enidchen0125 for the case-insensitive hashtag dedupe in publish drafts (#64), their first contribution to AI Edit Studio.
-- @rahul05ranjan for the spreadsheet-safe CSV shot list (#66), the exact NTSC frame rates in the timeline export (#67) and the chapter warnings (#77); #66 was their first contribution to AI Edit Studio.
+- @rahul05ranjan for the spreadsheet-safe CSV shot list (#66), the exact NTSC frame rates in the timeline export (#67), the chapter warnings (#77) and the longer hashtag stop list (#84); #66 was their first contribution to AI Edit Studio.
 - @tnalbant for the accent-folding brand kit ids that keep old kits readable (#29) and the request-file check (#28).
 - @DaniLlano for the chapter fix (#30), the preview shapes (#31), the safer speech setup (#32), OTIO transitions (#35), the music and story pointers for agents (#36), the SRT time fix (#43), the `bars` scene (#42), MP4 chapters (#41) and the schema-derived CLI flags with per-tool help (#44).
 - @Aaqibhafeezkhan for the troubleshooting entries and their error-code test (#37), the tool-count and version sync with its docs test (#34) and the SRT/VTT timeline export (#33).
