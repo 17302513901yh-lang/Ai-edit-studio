@@ -23,12 +23,14 @@ export const PUBLISH_PLATFORMS = Object.freeze({
   steam: { name: 'Steam / store page', titleMax: 0, descriptionMax: 300, tags: [] },
 });
 const fmt = s => { const t = Math.max(0, Math.round(s)); const h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), x = t % 60; return `${h ? `${h}:` : ''}${String(m).padStart(h ? 2 : 2, '0')}:${String(x).padStart(2, '0')}`; };
-const clean = (v, n) => String(v ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
+/** Slice to at most `n` UTF-16 units without leaving a lone surrogate at the end (same idiom as wrapTitle). Limits stay in UTF-16 units, so plain text cuts exactly as before. */
+const cut = (text, n) => text.slice(0, n).replace(/[\uD800-\uDBFF]$/, '');
+const clean = (v, n) => cut(String(v ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim(), n);
 /** Cut text down to `max` characters, ending with `…` and without splitting a word in half. */
 const shorten = (text, max) => {
   if (text.length <= max) return text;
-  const cut = text.slice(0, Math.max(0, max - 1));
-  const whole = /\S/.test(text.charAt(max - 1)) ? cut.replace(/\s+\S*$/, '') : cut;
+  const sliced = cut(text, Math.max(0, max - 1));
+  const whole = /\S/.test(text.charAt(max - 1)) ? sliced.replace(/\s+\S*$/, '') : sliced;
   return `${whole.trimEnd()}…`;
 };
 const filterPath = value => path.resolve(value).replaceAll('\\', '/').replace(':', '\\:').replaceAll("'", "\\'");
@@ -46,8 +48,12 @@ export function chapters(clips, options = {}) {
 }
 
 export function hashtags(...texts) {
-  const words = texts.join(' ').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').normalize('NFC').match(/[\p{L}\p{N}]{4,}/gu) ?? [];
-  const stop = new Set(['with', 'this', 'that', 'from', 'your', 'have', 'will', 'what', 'when', 'into', 'over', 'they', 'them', 'voor', 'naar', 'deze', 'met', 'maar', 'niet', 'zijn', 'wordt', 'worden', 'onze', 'jouw', 'heeft', 'more', 'than', 'just', 'like']);
+ const words = texts.join(' ').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').normalize('NFC').match(/[\p{L}\p{N}]{4,}/gu) ?? [];
+  const stop = new Set(['with', 'this', 'that', 'from', 'your', 'have', 'will', 'what', 'when', 'into', 'over', 'they', 'them', 'voor', 'naar', 'deze', 'met', 'maar', 'niet', 'zijn', 'wordt', 'worden', 'onze', 'jouw', 'heeft', 'more', 'than', 'just', 'like',
+    // common English and Dutch function words of 4+ letters (#61) — without them they fill the
+    // first five tags and push the real topic words out
+    'about', 'after', 'again', 'also', 'because', 'been', 'before', 'better', 'could', 'does', 'each', 'even', 'every', 'everything', 'here', 'make', 'many', 'much', 'only', 'other', 'some', 'such', 'their', 'there', 'these', 'thing', 'things', 'very', 'were', 'where', 'which', 'while', 'would',
+    'alles', 'beter', 'dingen', 'echt', 'enkele', 'hier', 'maken', 'nieuwe', 'omdat', 'veel', 'waar', 'want', 'werken', 'zelf', 'zoals']);
   const seen = new Set();
   return words.map(w => w.toLowerCase()).filter(w => !stop.has(w) && !/^\d+$/.test(w) && !seen.has(w) && seen.add(w)).slice(0, 5);
 }
@@ -78,7 +84,7 @@ export function metadataDrafts({ title, brief, cta, chapterList = [], tags = [],
     const pieces = [head, ...tail].filter(Boolean);
     let description = pieces.join('\n\n');
     if (description.length > p.descriptionMax) description = shorten(description, p.descriptionMax);
-    out[id] = { platform: p.name, ...(p.titleMax ? { title: base.slice(0, p.titleMax) } : {}), description, hashtags: list, draft: true };
+    out[id] = { platform: p.name, ...(p.titleMax ? { title: cut(base, p.titleMax) } : {}), description, hashtags: list, draft: true };
   }
   return out;
 }

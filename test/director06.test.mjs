@@ -163,6 +163,9 @@ test('publish: chapters, drafts, hashtags and frame quality', () => {
   assert.deepEqual(chapters(clips.slice(0, 2), {}), []);
   const tags = hashtags('AH-64 Apache laser guided missiles', 'Our helicopter game');
   assert.ok(tags.includes('apache') && tags.includes('laser') && !tags.includes('our'));
+  // filler words stay out and the topic words survive (#61)
+  assert.deepEqual(hashtags('Everything about our new update', 'Here are some things that would make your base better and where to find them'), ['update', 'base', 'find']);
+  assert.deepEqual(hashtags('Alles over onze nieuwe update', 'Hier zijn enkele dingen die jouw basis beter maken, omdat ze echt werken'), ['update', 'basis']);
   const d = metadataDrafts({ title: 'Apache strike', brief: 'Cockpit footage.', cta: 'Wishlist now', chapterList: ch, tags, platforms: ['youtube', 'x', 'shorts'] });
   assert.equal(d.youtube.title, 'Apache strike'); assert.match(d.youtube.description, /00:15 Takeoff/);
   assert.ok(d.x.description.length <= 280); assert.ok(d.shorts.hashtags.includes('#shorts'));
@@ -197,6 +200,23 @@ test('publish: a long brief is shortened so the call to action and the hashtags 
   const words = metadataDrafts({ title: 'T', brief: 'bravo '.repeat(60), platforms: ['steam'] });
   assert.ok(words.steam.description.length <= 300);
   assert.ok(words.steam.description.endsWith('bravo…'), words.steam.description.slice(-12));
+});
+
+test('publish: title and brief cuts never end in half an emoji', () => {
+  const loneSurrogate = s => /[\uD800-\uDBFF](?![\uDC00-\uDFFF])/.test(s);
+  // Emoji straddling the 100-unit title limit is dropped, not split.
+  const cutTitle = metadataDrafts({ title: `${'a'.repeat(99)}🎬 extra text`, brief: '', platforms: ['youtube'] });
+  assert.equal(cutTitle.youtube.title, 'a'.repeat(99));
+  assert.ok(!loneSurrogate(cutTitle.youtube.title));
+  // An emoji that fits entirely inside the limit is kept.
+  const fits = metadataDrafts({ title: `${'a'.repeat(98)}🎬`, brief: '', platforms: ['youtube'] });
+  assert.equal(fits.youtube.title, `${'a'.repeat(98)}🎬`);
+  // A brief shortened for x ends cleanly when the cut lands mid-emoji.
+  const brief = `${'a'.repeat(254)}🎬 tail words here to pad the brief out a bit more so it needs shortening`;
+  const x = metadataDrafts({ title: 'T', brief, cta: 'Wishlist now', tags: ['gamedev'], platforms: ['x'] });
+  assert.ok(x.x.description.length <= 280);
+  assert.ok(!loneSurrogate(x.x.description));
+  assert.match(x.x.description, /…/);
 });
 
 test('publish drafts deduplicate hashtags before applying each platform limit', () => {
