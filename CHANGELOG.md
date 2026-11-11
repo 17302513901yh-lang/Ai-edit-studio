@@ -2,11 +2,6 @@
 
 ## Unreleased
 
-- **Timeline exports: escaped media URLs.** A `#` or `?` in a source file name is written as `%23` or `%3F` in the FCPXML `media-rep` `src` and the OTIO `target_url`, so editors open the clip instead of looking for a shorter path (#99).
-- **Hashtags in German, French and Spanish:** common filler words (`spiel`, `wirklich`, `schon`, `dans`, `jugadores` and more) no longer become hashtags, while the topic words stay. English, Dutch and Japanese are unchanged. Thanks to @matiasad! (#96, #111)
-- **An empty SRT cue is skipped** instead of rejecting the whole file; a file with no captions at all still gives a clear error (#95, #112).
-- **Hindi quick start** (`docs/README.hi.md`), linked from the README next to the Dutch one. Thanks to @versha-singh! (#108, #110)
-
 ## 0.12.0 — captions, chapters and a friendlier CLI
 
 Better subtitles in and out, chapters inside the MP4, exact NTSC frame rates and a CLI that explains itself. 59 tools, nothing removed.
@@ -48,15 +43,20 @@ Better subtitles in and out, chapters inside the MP4, exact NTSC frame rates and
 - **`node cli.mjs studio <tool> --help` and typed flags**: every top-level tool argument works as a kebab-case flag (`--timeout-seconds 30`, `--export-id`), converted from the tool's schema, and an unknown flag is refused with the list of valid ones (#44).
 - **Platform drafts keep the call to action and hashtags**: a long brief is shortened on a whole word to make room, instead of the end of the draft being cut off (#50).
 - **Hashtags that differ only in case appear once** in publish drafts, so repeated tags no longer push other tags out (#47).
+- **Timeline exports: escaped media URLs.** A `#` or `?` in a source file name is written as `%23` or `%3F` in the FCPXML `media-rep` `src` and the OTIO `target_url`, so editors open the clip instead of looking for a shorter path (#99, #109).
+- **Hashtags in German, French and Spanish:** common filler words (`spiel`, `wirklich`, `schon`, `dans`, `jugadores` and more) no longer become hashtags, while the topic words stay. English, Dutch and Japanese are unchanged. (#96, #111)
+- **An empty SRT cue is skipped** instead of rejecting the whole file; a file with no captions at all still gives a clear error (#95, #112).
+- **Hindi quick start** (`docs/README.hi.md`), linked from the README next to the Dutch one. (#108, #110)
 
 ### Thanks
 
-- @bfs2021 for the generated help (#13), the long SRT/VTT transcript import (#20), the `=` flag fix (#27) the VTT entity decoding (#40) and the brief that makes room for the call to action and hashtags (#50) and the ASS override clean-up in SRT import (#65) and the wrapping of long words in animated captions (#74).
+- @bfs2021 for the generated help (#13), the long SRT/VTT transcript import (#20), the `=` flag fix (#27) the VTT entity decoding (#40) and the brief that makes room for the call to action and hashtags (#50) and the ASS override clean-up in SRT import (#65) and the wrapping of long words in animated captions (#74), and the escaped `#` and `?` in timeline media URLs (#109).
 - @wized2 for the clearer file errors (#14) and the named probe failures (#19).
 - @khizzcr7 for cutting titles and briefs without splitting an emoji (#87), their first contribution to AI Edit Studio.
-- @matiasad for keeping the voiced marks of Japanese hashtags (#88), their first contribution to AI Edit Studio.
+- @matiasad for keeping the voiced marks of Japanese hashtags (#88), their first contribution to AI Edit Studio, and the German, French and Spanish hashtag stop words (#111).
 - @enidchen0125 for the case-insensitive hashtag dedupe in publish drafts (#64), their first contribution to AI Edit Studio.
 - @rahul05ranjan for the spreadsheet-safe CSV shot list (#66), the exact NTSC frame rates in the timeline export (#67), the chapter warnings (#77), the longer hashtag stop list (#84) and the Chinese and Japanese word segmentation (#85); #66 was their first contribution to AI Edit Studio.
+- @versha-singh for the Hindi quick start (#110).
 - @tnalbant for the accent-folding brand kit ids that keep old kits readable (#29) and the request-file check (#28).
 - @DaniLlano for the chapter fix (#30), the preview shapes (#31), the safer speech setup (#32), OTIO transitions (#35), the music and story pointers for agents (#36), the SRT time fix (#43), the `bars` scene (#42), MP4 chapters (#41) and the schema-derived CLI flags with per-tool help (#44).
 - @Aaqibhafeezkhan for the troubleshooting entries and their error-code test (#37), the tool-count and version sync with its docs test (#34) and the SRT/VTT timeline export (#33).
