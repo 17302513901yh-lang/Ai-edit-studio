@@ -85,6 +85,19 @@ test('SRT: one-digit hours and position coordinates after the end time are accep
   }
   assert.throws(() => parseSrt('1\n00:00:01,000 --> not a time\nHi'), /SRT requires times/);
 });
+test('SRT: an empty cue is skipped, like the WebVTT importer does', () => {
+  const srt = '1\n00:00:01,000 --> 00:00:02,000\nHello\n\n2\n00:00:03,000 --> 00:00:04,000\n\n\n3\n00:00:05,000 --> 00:00:06,000\nBye\n';
+  for (const cues of [parseSrt(srt), parseSrtCues(srt)]) assert.deepEqual(cues.map(c => c.text), ['Hello', 'Bye']);
+  // A cue whose text is only tags has no text either.
+  assert.deepEqual(parseSrtCues('1\n00:00:01,000 --> 00:00:02,000\n{\\an8}\n\n2\n00:00:03,000 --> 00:00:04,000\nHi\n').map(c => c.text), ['Hi']);
+  // A block with no --> line is still invalid, and a bad time still errors even with no text.
+  assert.throws(() => parseSrt('1\n00:00:01,000 --> 00:00:02,000\nHi\n\n2\nno time line here\nHello'), /Invalid SRT block/);
+  assert.throws(() => parseSrt('1\n00:00:01,000 --> not a time\n'), /SRT requires times/);
+  // A file whose only cue is empty: no cues for transcripts, a clear error for captions.
+  const only = '1\n00:00:01,000 --> 00:00:02,000\n';
+  assert.deepEqual(parseSrtCues(only), []);
+  assert.throws(() => parseSrt(only), /SRT has no captions/);
+});
 test('transcript cues drop the caption limits; VTT reads header, settings, ids and short times', () => {
   const long = Array.from({ length: 400 }, (_, i) => `${i + 1}\n00:00:${String(i % 60).padStart(2, '0')},${String((i * 7) % 1000).padStart(3, '0')} --> 00:00:${String((i + 1) % 60).padStart(2, '0')},000\ncue ${i + 1}`).join('\n\n');
   assert.equal(parseSrtCues(long).length, 400);
