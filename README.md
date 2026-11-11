@@ -16,7 +16,7 @@ leaves your machine; originals are only read.
 
 *Formerly Game Trailer Studio. Existing projects, storage paths, `GAME_TRAILER_STUDIO_*` settings and the
 `Start-Game-Trailer-Studio.*` scripts keep working. The Dutch history of this README lives in
-[docs/README.nl.md](docs/README.nl.md).*
+[docs/README.nl.md](docs/README.nl.md). Hindi quick start: [docs/README.hi.md](docs/README.hi.md).*
 
 ## What it does
 
