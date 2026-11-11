@@ -30,6 +30,29 @@ test('timing: beats × (60 / bpm), transition overlaps the previous scene and en
   assert.equal(c.duration, 4);
 });
 
+test('a story with an unknown music style, mood or seed is refused before building', () => {
+  const good = { bpm: 96, style: 'lofi', mood: 'chill', seed: 42 };
+  const c = compileStory(base({ music: good }));
+  assert.equal(c.music.style, 'lofi');
+  assert.equal(c.music.mood, 'chill');
+  assert.equal(c.music.seed, 42);
+  assert.equal(compileStory(base()).music.style, undefined, 'a missing style still means no music');
+  assert.equal(compileStory(base({ music: { bpm: 96, style: 'pop' } })).music.mood, undefined);
+  const bad = [
+    ['style', 'polka', /music.style must be one of pop, trap, house, lofi, synthwave, cinematic/],
+    ['mood', 'angry', /music.mood must be one of uplifting, emotional, epic, dark, chill, dreamy/],
+    ['seed', 'x', /music.seed must be an integer/],
+    ['seed', 1.5, /music.seed must be an integer/],
+  ];
+  for (const [field, value, re] of bad) {
+    assert.throws(() => compileStory(base({ music: { ...good, [field]: value } })), (err) => {
+      assert.equal(err.code, 'INVALID_STORY');
+      assert.match(err.message, re);
+      return true;
+    }, `${field}=${value}`);
+  }
+});
+
 test('mistakes are refused or warned in plain words', () => {
   assert.throws(() => compileStory({ scenes: [] }), /scenes/);
   assert.throws(() => compileStory({ scenes: [scene('a'), scene('a')] }), /used twice/);
