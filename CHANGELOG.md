@@ -3,6 +3,9 @@
 ## Unreleased
 
 - **Timeline exports: escaped media URLs.** A `#` or `?` in a source file name is written as `%23` or `%3F` in the FCPXML `media-rep` `src` and the OTIO `target_url`, so editors open the clip instead of looking for a shorter path (#99).
+- **Hashtags in German, French and Spanish:** common filler words (`spiel`, `wirklich`, `schon`, `dans`, `jugadores` and more) no longer become hashtags, while the topic words stay. English, Dutch and Japanese are unchanged. Thanks to @matiasad! (#96, #111)
+- **An empty SRT cue is skipped** instead of rejecting the whole file; a file with no captions at all still gives a clear error (#95, #112).
+- **Hindi quick start** (`docs/README.hi.md`), linked from the README next to the Dutch one. Thanks to @versha-singh! (#108, #110)
 
 ## 0.12.0 — captions, chapters and a friendlier CLI
 
