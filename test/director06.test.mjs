@@ -188,6 +188,39 @@ test('publish: hashtags still fold Latin accents', () => {
   assert.deepEqual(hashtags('Café CAFÉ résumé'), ['cafe', 'resume']);
 });
 
+test('publish: German hashtags skip function words and keep topic words', () => {
+  assert.deepEqual(
+    hashtags('Das ist nicht das Spiel, aber auch wirklich schön und viele andere Dinge'),
+    ['spiel', 'wirklich', 'schon']
+  );
+});
+
+test('publish: French hashtags skip function words and keep topic words', () => {
+  assert.deepEqual(
+    hashtags('Nous avons dans cette vidéo beaucoup de choses pour vous'),
+    ['video']
+  );
+});
+
+test('publish: Spanish hashtags skip function words and keep topic words', () => {
+  assert.deepEqual(
+    hashtags('Esto es para todos los jugadores, pero también muchas cosas'),
+    ['jugadores']
+  );
+});
+
+test('publish: hashtags preserve English and Dutch examples', () => {
+  assert.deepEqual(
+    hashtags('This is about the Apache helicopter with laser guided missiles'),
+    ['apache', 'helicopter', 'laser', 'guided', 'missiles']
+  );
+
+  assert.deepEqual(
+    hashtags('Deze video gaat over onze nieuwe Apache helikopter met laser'),
+    ['video', 'gaat', 'apache', 'helikopter', 'laser']
+  );
+});
+
 test('publish: a long brief is shortened so the call to action and the hashtags still fit', () => {
   const d = metadataDrafts({ title: 'T', brief: 'word '.repeat(100), cta: 'Wishlist now', tags: ['gamedev', 'indie'], platforms: ['x', 'steam'] });
   assert.ok(d.x.description.length <= 280);

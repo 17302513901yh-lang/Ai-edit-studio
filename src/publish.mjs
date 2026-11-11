@@ -53,7 +53,13 @@ export function hashtags(...texts) {
     // common English and Dutch function words of 4+ letters (#61) — without them they fill the
     // first five tags and push the real topic words out
     'about', 'after', 'again', 'also', 'because', 'been', 'before', 'better', 'could', 'does', 'each', 'even', 'every', 'everything', 'here', 'make', 'many', 'much', 'only', 'other', 'some', 'such', 'their', 'there', 'these', 'thing', 'things', 'very', 'were', 'where', 'which', 'while', 'would',
-    'alles', 'beter', 'dingen', 'echt', 'enkele', 'hier', 'maken', 'nieuwe', 'omdat', 'veel', 'waar', 'want', 'werken', 'zelf', 'zoals']);
+    'alles', 'beter', 'dingen', 'echt', 'enkele', 'hier', 'maken', 'nieuwe', 'omdat', 'veel', 'waar', 'want', 'werken', 'zelf', 'zoals',
+    // common German function and generic words of 4+ letters (#96)
+    'aber', 'auch', 'andere', 'dass', 'diese', 'dieser', 'dieses', 'dinge', 'eine', 'einen', 'einer', 'nicht', 'noch', 'sich', 'sind', 'viele', 'wird',
+    // common French function and generic words of 4+ letters (#96)
+    'avec', 'avons', 'beaucoup', 'cette', 'choses', 'dans', 'leur', 'mais', 'nous', 'pour', 'sans', 'sont', 'tout', 'tous', 'vous',
+    // common Spanish function and generic words of 4+ letters (#96)
+    'como', 'cosas', 'esta', 'este', 'esto', 'muchas', 'muchos', 'para', 'pero', 'porque', 'sobre', 'tambien', 'todos', 'todas']);
   const seen = new Set();
   return words.map(w => w.toLowerCase()).filter(w => !stop.has(w) && !/^\d+$/.test(w) && !seen.has(w) && seen.add(w)).slice(0, 5);
 }
