@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Fix publish-pack YouTube chapters to use edit sections before falling back to labelled markers or clip labels.
+- Fix publish-pack YouTube chapters to use edit sections before falling back to labelled markers or clip labels. Thanks to @matiasad! (#121, #125)
 
 ## 0.12.0 — captions, chapters and a friendlier CLI
 
