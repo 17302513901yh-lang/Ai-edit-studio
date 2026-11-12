@@ -267,7 +267,10 @@ export function compileStory(story) {
   // the build fail with INVALID_STORY instead of quietly composing another track.
   if (music.style !== undefined && !Object.hasOwn(STYLES, music.style)) fail(`music.style must be one of ${Object.keys(STYLES).join(', ')}.`);
   if (music.mood !== undefined && !Object.hasOwn(MOODS, music.mood)) fail(`music.mood must be one of ${Object.keys(MOODS).join(', ')}.`);
-  if (music.seed !== undefined && (music.seed === null || !Number.isFinite(Number(music.seed)) || !Number.isInteger(Number(music.seed)))) fail('music.seed must be an integer.');
+  // studio_music takes an integer seed from 0 to 2147483647. Only a real
+  // number in that range is safe: coercing with Number() would also accept
+  // true, "", [], null and "42" and would leave that raw value in the story.
+  if (music.seed !== undefined && (typeof music.seed !== 'number' || !Number.isInteger(music.seed) || music.seed < 0 || music.seed > 2147483647)) fail('music.seed must be an integer from 0 to 2147483647.');
   const beat = 60 / bpm, bar = 4 * beat;
   const style = normalizeStyle(story.style);
   if (!Array.isArray(story.scenes) || !story.scenes.length || story.scenes.length > 60) fail('scenes needs 1 to 60 scenes.');

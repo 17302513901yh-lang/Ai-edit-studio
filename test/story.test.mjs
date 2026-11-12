@@ -38,11 +38,23 @@ test('a story with an unknown music style, mood or seed is refused before buildi
   assert.equal(c.music.seed, 42);
   assert.equal(compileStory(base()).music.style, undefined, 'a missing style still means no music');
   assert.equal(compileStory(base({ music: { bpm: 96, style: 'pop' } })).music.mood, undefined);
+  for (const seed of [0, 1, 42, 2147483647]) {
+    const ok = compileStory(base({ music: { ...good, seed } }));
+    assert.equal(ok.music.seed, seed, `an integer seed ${seed} is accepted`);
+    assert.equal(typeof ok.music.seed, 'number', 'the compiled seed stays a number');
+  }
   const bad = [
     ['style', 'polka', /music.style must be one of pop, trap, house, lofi, synthwave, cinematic/],
     ['mood', 'angry', /music.mood must be one of uplifting, emotional, epic, dark, chill, dreamy/],
-    ['seed', 'x', /music.seed must be an integer/],
-    ['seed', 1.5, /music.seed must be an integer/],
+    ['seed', 'x', /music.seed must be an integer from 0 to 2147483647/],
+    ['seed', '42', /music.seed must be an integer from 0 to 2147483647/],
+    ['seed', 1.5, /music.seed must be an integer from 0 to 2147483647/],
+    ['seed', true, /music.seed must be an integer from 0 to 2147483647/],
+    ['seed', '', /music.seed must be an integer from 0 to 2147483647/],
+    ['seed', [], /music.seed must be an integer from 0 to 2147483647/],
+    ['seed', null, /music.seed must be an integer from 0 to 2147483647/],
+    ['seed', -1, /music.seed must be an integer from 0 to 2147483647/],
+    ['seed', 2 ** 31, /music.seed must be an integer from 0 to 2147483647/],
   ];
   for (const [field, value, re] of bad) {
     assert.throws(() => compileStory(base({ music: { ...good, [field]: value } })), (err) => {
