@@ -9,7 +9,7 @@ import { StudioError, writeJsonAtomic } from './paths.mjs';
 import { findFfmpegTools, inspectFfmpeg } from './ffmpeg.mjs';
 import { runProcess } from './process.mjs';
 import { filterColors } from './render.mjs';
-import { layout, totalDuration } from '../public/edit-ops.js';
+import { layout, totalDuration, sectionSpans } from '../public/edit-ops.js';
 import { curvesFor, clipEnergy } from '../public/insights.js';
 import { mapCaptions, toSrt, toVtt } from '../public/captions.js';
 
@@ -35,11 +35,17 @@ const shorten = (text, max) => {
 };
 const filterPath = value => path.resolve(value).replaceAll('\\', '/').replace(':', '\\:').replaceAll("'", "\\'");
 
-/** YouTube-style chapters (first at 0:00, ≥3 chapters, ≥10 s apart) from labelled markers or clip labels. */
+/** YouTube-style chapters (first at 0:00, ≥3 chapters, ≥10 s apart): sections first, else labelled markers or clip labels. */
 export function chapters(clips, options = {}) {
   const total = totalDuration(clips);
-  let rows = (options.markers ?? []).filter(m => m.label).map(m => ({ time: m.time, title: clean(m.label, 60) }));
-  if (rows.length < 2) rows = layout(clips).filter(r => r.label && r.label !== 'hook').map(r => ({ time: r.visibleStart, title: clean(r.label, 60) }));
+  const sections = sectionSpans(clips, options.sections ?? []);
+  let rows;
+  if (sections.length) {
+    rows = sections.map(s => ({ time: s.start, title: clean(s.name, 60) }));
+  } else {
+    rows = (options.markers ?? []).filter(m => m.label).map(m => ({ time: m.time, title: clean(m.label, 60) }));
+    if (rows.length < 2) rows = layout(clips).filter(r => r.label && r.label !== 'hook').map(r => ({ time: r.visibleStart, title: clean(r.label, 60) }));
+  }
   rows = rows.filter(r => r.time < total - 10).sort((a, b) => a.time - b.time);
   const out = [];
   for (const r of rows) if (!out.length || r.time - out.at(-1).time >= 10) out.push(r);
