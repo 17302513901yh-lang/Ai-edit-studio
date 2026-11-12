@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-- **A story with a wrong `music.style`, `music.mood` or `music.seed` is refused** with `INVALID_STORY` and the list of allowed values, instead of silently composing a `pop` track with the default mood and a random seed. `music.seed` must be an integer number in the same range as `studio_music` (0 to 2147483647): strings, booleans, `null`, negative and fractional values are refused, and the compiled story keeps the number as given. An explicit `style: null` or `mood: null` is refused too; leave the field out to mean "not set" (#102).
+- **A story with a wrong `music.style`, `music.mood` or `music.seed` is refused** with `INVALID_STORY` and the list of allowed values, instead of silently composing a `pop` track with the default mood and a random seed. `music.seed` must be an integer number in the same range as `studio_music` (0 to 2147483647): strings, booleans, `null`, negative and fractional values are refused, and the compiled story keeps the number as given. An explicit `style: null` or `mood: null` is refused too; leave the field out to mean "not set". Thanks to @17302513901yh-lang! (#102, #113)
+
 ## 0.12.0 — captions, chapters and a friendlier CLI
 
 Better subtitles in and out, chapters inside the MP4, exact NTSC frame rates and a CLI that explains itself. 59 tools, nothing removed.
