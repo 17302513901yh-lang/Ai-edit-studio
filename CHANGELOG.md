@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **CJK queries and scripts work in `studio_search` and `studio_assemble`:** search queries and script lines are segmented with `splitWords()` like transcripts, so a Chinese or Japanese phrase typed without spaces now matches. Thanks to @17302513901yh-lang! (#122)
+
 ## 0.12.0 — captions, chapters and a friendlier CLI
 
 Better subtitles in and out, chapters inside the MP4, exact NTSC frame rates and a CLI that explains itself. 59 tools, nothing removed.
