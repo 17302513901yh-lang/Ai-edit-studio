@@ -12,6 +12,7 @@ import { filterColors } from './render.mjs';
 import { layout, totalDuration } from '../public/edit-ops.js';
 import { curvesFor, clipEnergy } from '../public/insights.js';
 import { mapCaptions, toSrt, toVtt } from '../public/captions.js';
+import { CJK_RE } from '../public/transcript.js';
 
 export const PUBLISH_PLATFORMS = Object.freeze({
   youtube: { name: 'YouTube', titleMax: 100, descriptionMax: 5000, tags: [] },
@@ -157,8 +158,20 @@ async function renderStill({ source, time, out, width, height, focusX = 0.5, foc
     '-frames:v', '1', '-vf', vf, '-q:v', '2', out], { timeoutMs: 60_000 });
 }
 export function wrapTitle(text, max) {
+  const value = String(text ?? '');
+  // Han / Hiragana / Katakana titles have no spaces, so the word-based wrap
+  // below leaves one long line that runs off the picture. Cut such a title
+  // into lines of at most `max` code points (never splitting a surrogate
+  // pair), keeping the three-line limit and the ellipsis from #48.
+  if (CJK_RE.test(value) && !value.includes(' ')) {
+    const chars = [...value];
+    const lines = [];
+    for (let i = 0; i < chars.length && lines.length < 3; i += max) lines.push(chars.slice(i, i + max).join(''));
+    if (chars.length > 3 * max) lines[2] = [...lines[2]].slice(0, max - 1).join('') + '…';
+    return lines.join('\n');
+  }
   const lines = []; let line = '';
-  for (const word of text.split(' ')) { if (line && (line + ' ' + word).length > max) { lines.push(line); line = ''; } line += (line ? ' ' : '') + word; }
+  for (const word of value.split(' ')) { if (line && (line + ' ' + word).length > max) { lines.push(line); line = ''; } line += (line ? ' ' : '') + word; }
   if (line) lines.push(line);
   if (lines.length > 3) {
     const last = lines[2];
