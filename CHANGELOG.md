@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-- **CJK queries and scripts work in `studio_search` and `studio_assemble`:** search queries and script lines are segmented with `splitWords()` like transcripts, so a Chinese or Japanese phrase typed without spaces now matches. Thanks to @17302513901yh-lang! (#122)
+- **CJK queries and scripts work in `studio_search` and `studio_assemble`:** search queries and script lines are segmented with `splitWords()` like transcripts, so a Chinese or Japanese phrase typed without spaces now matches. Thanks to @17302513901yh-lang! (#122, #126)
+- Fix publish-pack YouTube chapters to use edit sections before falling back to labelled markers or clip labels. Thanks to @matiasad! (#121, #125)
 
 ## 0.12.0 — captions, chapters and a friendlier CLI
 
@@ -49,6 +50,7 @@ Better subtitles in and out, chapters inside the MP4, exact NTSC frame rates and
 - **Hashtags in German, French and Spanish:** common filler words (`spiel`, `wirklich`, `schon`, `dans`, `jugadores` and more) no longer become hashtags, while the topic words stay. English, Dutch and Japanese are unchanged. (#96, #111)
 - **An empty SRT cue is skipped** instead of rejecting the whole file; a file with no captions at all still gives a clear error (#95, #112).
 - **Hindi quick start** (`docs/README.hi.md`), linked from the README next to the Dutch one. (#108, #110)
+- **A story with a wrong `music.style`, `music.mood` or `music.seed` is refused** with `INVALID_STORY` and the list of allowed values, instead of silently composing a `pop` track with the default mood and a random seed. `music.seed` must be an integer number in the same range as `studio_music` (0 to 2147483647): strings, booleans, `null`, negative and fractional values are refused, and the compiled story keeps the number as given. An explicit `style: null` or `mood: null` is refused too; leave the field out to mean "not set". Thanks to @17302513901yh-lang! (#102, #113)
 
 ### Thanks
 
