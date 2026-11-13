@@ -231,7 +231,11 @@ export function buildAutoEdit({ sources, options = {}, goal = {}, beats = [], tr
   patch.texts = texts;
   const captions = [];
   for (const [index, t] of Object.entries(transcripts)) if (t?.words?.length) captions.push(...captionsFromEdit(t.words, clips, Number(index)));
-  if (captions.length) { patch.captions = captions.slice(0, 300); steps.push(`${patch.captions.length} caption(s) from the transcript`); }
+  if (captions.length) {
+    patch.captions = captions.slice(0, LIMITS.captions);
+    steps.push(`${patch.captions.length} caption(s) from the transcript`);
+    if (captions.length > patch.captions.length) steps.push(`${captions.length - patch.captions.length} caption(s) not added: at most ${LIMITS.captions} lines`);
+  }
 
   // 5. Beat sync and an automatic review-fix loop.
   let state = { clips: coreClips(clips), options: { ...options, ...patch } };

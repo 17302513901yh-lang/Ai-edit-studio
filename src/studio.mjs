@@ -810,7 +810,10 @@ function transcriptCaptions(clips, existing, transcripts) {
   const covered = new Set(Object.keys(transcripts).map(Number));
   const kept = existing.filter(c => !covered.has(c.sourceIndex));
   const made = Object.entries(transcripts).flatMap(([index, t]) => captionsFromEdit(t.words, clips, Number(index)));
-  return [...kept, ...made].sort((a, b) => a.sourceIndex - b.sourceIndex || a.start - b.start).slice(0, 300);
+  const all = [...kept, ...made].sort((a, b) => a.sourceIndex - b.sourceIndex || a.start - b.start);
+  // Report the cut instead of hiding it: a 20-minute talk used to lose its last
+  // 14 minutes of captions here while the answer still said ok (#105).
+  return { captions: all.slice(0, LIMITS.captions), dropped: Math.max(0, all.length - LIMITS.captions) };
 }
 async function saveTranscript(project, index, result) {
   const source = project.sources[index];
@@ -824,10 +827,10 @@ async function saveTranscript(project, index, result) {
   return record;
 }
 function captionsRevision(project, transcripts, author) {
-  if (!project.plan) return false;
-  const captions = transcriptCaptions(project.plan.clips, project.options.captions ?? [], transcripts);
+  if (!project.plan) return null;
+  const { captions, dropped } = transcriptCaptions(project.plan.clips, project.options.captions ?? [], transcripts);
   project.options = { ...project.options, captions, autoCaptions: true };
-  return true;
+  return { dropped };
 }
 
 export async function speechInfo() { return speechStatus(); }
@@ -850,11 +853,13 @@ export async function transcribeProject(id, request = {}) {
       await saveTranscript(project, index, result);
     }
     const before = editState(project);
-    if (request.captions !== false && captionsRevision(project, await loadTranscripts(project))) {
+    const captions = request.captions !== false ? captionsRevision(project, await loadTranscripts(project)) : null;
+    if (captions) {
       project.revision++;
       await recordRevision(project, before, { by: request.author ?? 'engine', summary: 'Captions from transcript' });
     }
-    project.message = `Transcript ready (${indices.map(i => project.transcripts[i].words).reduce((a, b) => a + b, 0)} words). Edit by text in the Transcript tab.`;
+    project.message = `Transcript ready (${indices.map(i => project.transcripts[i].words).reduce((a, b) => a + b, 0)} words). Edit by text in the Transcript tab.`
+      + (captions?.dropped ? ` ${captions.dropped} caption(s) were not added: at most ${LIMITS.captions} lines.` : '');
   }, request.revision);
 }
 

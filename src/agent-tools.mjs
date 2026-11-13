@@ -24,7 +24,7 @@ const options = object({
   fadeIn: number(0, 3), fadeOut: number(0, 3), duckMusic: bool, reduceRumble: bool,
   sourceChannel: choice(['stereo', 'left', 'right', 'mono']), narration: string(), narrationStart: number(0, T), narrationTrimStart: number(0, S), narrationGain: number(0, 2),
   masterFormat: choice([...MASTER_FORMATS]), socialSize: choice([...SOCIAL_SIZES]), exportVertical: bool, exportShare: bool, exportSquare: bool, exportPortrait: bool,
-  captions: { type: 'array', items: caption, maxItems: 300 }, captionOffset: number(-30, 30),
+  captions: { type: 'array', items: caption, maxItems: LIMITS.captions }, captionOffset: number(-30, 30),
   captionStyle: choice(['box', 'bold', 'minimal']), captionPosition: choice(['low', 'middle', 'high']), musicTrimStart: number(0, 600),
   captionAnimation: choice(['none', 'karaoke', 'pop', 'highlight', 'words']), captionCase: choice(['normal', 'upper']),
   markers: { type: 'array', maxItems: 100, items: object({ time: number(0, T), label: string(60), color: choice(['yellow', 'red', 'green', 'blue']) }, ['time']) },

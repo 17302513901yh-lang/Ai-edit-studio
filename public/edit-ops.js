@@ -2,7 +2,11 @@
 // The timeline is gapless: every clip follows the previous one, so trims ripple.
 // Clips reference ORIGINAL source time; timeline time is derived.
 
-export const LIMITS = Object.freeze({ clips: 200, editSeconds: 1200, sources: 24, sourceSeconds: 7200, minSource: 0.5, minTimeline: 0.25, texts: 100, markers: 100, overlays: 50 });
+// `captions` is one line per second of the longest edit: a viewer cannot read more
+// than one cue per second, so a 20-minute edit (`editSeconds`) never needs more
+// lines than it has seconds. It stays its own number because a caption is not a
+// second — the two limits are equal today by that argument, not by accident.
+export const LIMITS = Object.freeze({ clips: 200, editSeconds: 1200, captions: 1200, sources: 24, sourceSeconds: 7200, minSource: 0.5, minTimeline: 0.25, texts: 100, markers: 100, overlays: 50 });
 export const CLIP_FIELDS = Object.freeze(['id', 'sourceIndex', 'start', 'end', 'speed', 'gain', 'framing', 'zoom', 'zoomEnd', 'focusX', 'focusY', 'focusXEnd', 'focusYEnd', 'mirror', 'label', 'audioShift',
   'transition', 'transitionSeconds', 'brightness', 'contrast', 'saturation', 'temperature', 'sharpen', 'denoise', 'stabilize']);
 /** Transition INTO a clip from the previous one. Keys are FFmpeg xfade names (plus cut). */
