@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **CJK queries and scripts work in `studio_search` and `studio_assemble`:** search queries and script lines are segmented with `splitWords()` like transcripts, so a Chinese or Japanese phrase typed without spaces now matches. Thanks to @17302513901yh-lang! (#122, #126)
 - Fix publish-pack YouTube chapters to use edit sections before falling back to labelled markers or clip labels. Thanks to @matiasad! (#121, #125)
 
 ## 0.12.0 — captions, chapters and a friendlier CLI
