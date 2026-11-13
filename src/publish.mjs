@@ -12,7 +12,29 @@ import { filterColors } from './render.mjs';
 import { layout, totalDuration, sectionSpans } from '../public/edit-ops.js';
 import { curvesFor, clipEnergy } from '../public/insights.js';
 import { mapCaptions, toSrt, toVtt } from '../public/captions.js';
-import { CJK_RE } from '../public/transcript.js';
+// Width in "Latin units" for the fixed-size font used by the publish pack:
+// Han / Hiragana / Katakana and full-width punctuation take twice the room of
+// a Latin letter. Counting UTF-16 units for everything else keeps the
+// word-based wrapping of plain Latin titles byte-for-byte unchanged.
+// \u3040-\u30ff also covers Script=Common kana marks such as the prolonged
+// sound mark 'ー' (U+30FC), which are just as wide as the surrounding kana.
+const WIDE_RE = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\u3000-\u303f\u3040-\u30ff\u31f0-\u31ff\uff00-\uffef]/u;
+const charWidth = ch => (WIDE_RE.test(ch) ? 2 : ch.length);
+function widthOf(text) {
+  let w = 0;
+  for (const ch of text) w += charWidth(ch);
+  return w;
+}
+/** Longest prefix of `text` (by code point, never splitting a surrogate pair) whose width fits `budget`. */
+function takeByWidth(text, budget) {
+  let out = '', w = 0;
+  for (const ch of text) {
+    const cw = charWidth(ch);
+    if (w + cw > budget) break;
+    out += ch; w += cw;
+  }
+  return out;
+}
 
 export const PUBLISH_PLATFORMS = Object.freeze({
   youtube: { name: 'YouTube', titleMax: 100, descriptionMax: 5000, tags: [] },
@@ -165,24 +187,38 @@ async function renderStill({ source, time, out, width, height, focusX = 0.5, foc
 }
 export function wrapTitle(text, max) {
   const value = String(text ?? '');
-  // Han / Hiragana / Katakana titles have no spaces, so the word-based wrap
-  // below leaves one long line that runs off the picture. Cut such a title
-  // into lines of at most `max` code points (never splitting a surrogate
-  // pair), keeping the three-line limit and the ellipsis from #48.
-  if (CJK_RE.test(value) && !value.includes(' ')) {
-    const chars = [...value];
-    const lines = [];
-    for (let i = 0; i < chars.length && lines.length < 3; i += max) lines.push(chars.slice(i, i + max).join(''));
-    if (chars.length > 3 * max) lines[2] = [...lines[2]].slice(0, max - 1).join('') + '…';
-    return lines.join('\n');
-  }
   const lines = []; let line = '';
-  for (const word of value.split(' ')) { if (line && (line + ' ' + word).length > max) { lines.push(line); line = ''; } line += (line ? ' ' : '') + word; }
+  for (const word of value.split(' ')) {
+    // A word containing wide (CJK / full-width) characters can be wider than
+    // the whole line budget by itself. Cut it into width-sized pieces, flushing
+    // the line built so far first. This is the same code path for a title with
+    // no spaces and for a spaced title with a long CJK run (#97).
+    if (WIDE_RE.test(word) && widthOf(word) > max) {
+      if (line) { lines.push(line); line = ''; }
+      let rest = word;
+      while (widthOf(rest) > max) {
+        let piece = takeByWidth(rest, max);
+        if (!piece) piece = [...rest][0]; // a single code point wider than max
+        lines.push(piece);
+        rest = rest.slice(piece.length);
+      }
+      line = rest; // the last piece can still take following words
+      continue;
+    }
+    // For text without wide characters widthOf() equals .length, so Latin
+    // titles wrap byte-for-byte as they did before this change.
+    if (line && widthOf(line + ' ' + word) > max) { lines.push(line); line = ''; }
+    line += (line ? ' ' : '') + word;
+  }
   if (line) lines.push(line);
   if (lines.length > 3) {
+    // Reserve one unit for the ellipsis, so the last line plus '…' still fits
+    // inside `max` units (six CJK characters plus '…' would be one too wide).
+    const budget = max - 1;
     const last = lines[2];
-    const boundary = last.lastIndexOf(' ', max - 1);
-    const shortened = last.length < max ? last : last.slice(0, boundary > 0 ? boundary : max - 1);
+    const boundary = last.lastIndexOf(' ', budget);
+    const shortened = widthOf(last) <= budget ? last
+      : takeByWidth(boundary > 0 ? last.slice(0, boundary) : last, budget);
     lines[2] = shortened.replace(/[\uD800-\uDBFF]$/, '') + '…';
   }
   return lines.slice(0, 3).join('\n');
