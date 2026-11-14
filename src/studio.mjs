@@ -520,10 +520,18 @@ export async function editProject(id, request = {}) {
   try { next = applyOperations(before, operations, { sources: sourceDurations(project), beats }); }
   catch (e) { if (e instanceof EditError) throw new StudioError(e.code, e.message); throw e; }
   // Captions that follow the transcript: rebuilt from the words that are still in the edit.
+  // transcriptCaptions() returns { captions, dropped }, not an array: passing the whole
+  // object on made every import / studio_edit fail with INVALID_CAPTIONS (#105).
+  let captionsLimit = { dropped: 0, sources: [] };
   if (next.options.autoCaptions) {
     const transcripts = await loadTranscripts(project);
-    if (Object.keys(transcripts).length) next = { ...next, options: { ...next.options, captions: transcriptCaptions(next.clips, next.options.captions ?? [], transcripts) } };
+    if (Object.keys(transcripts).length) {
+      const rebuilt = transcriptCaptions(next.clips, next.options.captions ?? [], transcripts);
+      captionsLimit = { dropped: rebuilt.dropped, sources: rebuilt.droppedSources };
+      next = { ...next, options: { ...next.options, captions: rebuilt.captions } };
+    }
   }
+  const captionsWarnings = captionsLimit.dropped ? [captionsLimitMessage(captionsLimit.dropped)] : [];
   // Re-check after async work: another client may have saved meanwhile.
   if (request.revision !== project.revision || active.has(project.status)) throw new StudioError('REVISION_CONFLICT', 'Project has changed in the meantime.');
   const options = await checkedOptions(next.options);
@@ -532,16 +540,20 @@ export async function editProject(id, request = {}) {
   plan.style = project.plan?.style ?? options.style;
   const after = { clips: coreClips(plan.clips), options };
   const diff = diffEdits(before, after);
-  const review = reviewEdit({ clips: plan.clips, sources: project.sources, options, beats: projectBeats(project) || beats, analyzed: project.sources.some(s => s.motion?.length) });
+  const review = reviewEdit({ clips: plan.clips, sources: project.sources, options, beats: projectBeats(project) || beats, analyzed: project.sources.some(s => s.motion?.length),
+    captionsDropped: captionsLimit.dropped, captionsDroppedSources: captionsLimit.sources });
   if (request.dryRun === true) {
-    return { dryRun: true, revision: project.revision, diff, review: { score: review.score, counts: review.counts },
+    return { dryRun: true, revision: project.revision, diff, ...(captionsWarnings.length ? { warnings: captionsWarnings } : {}),
+      review: { score: review.score, counts: review.counts },
       timeline: describeTimeline({ clips: plan.clips, sources: project.sources, options, beats }) };
   }
   if (request.revision !== project.revision || active.has(project.status)) throw new StudioError('REVISION_CONFLICT', 'Project has changed in the meantime or is being rendered.');
-  Object.assign(project, { options, plan, revision: project.revision + 1, status: 'draft', progress: 0, message: request.summary || diff.summary });
+  Object.assign(project, { options, plan, captionsDropped: captionsLimit.dropped, captionsDroppedSources: captionsLimit.sources,
+    revision: project.revision + 1, status: 'draft', progress: 0, message: request.summary || diff.summary });
   await recordRevision(project, before, { by: request.author, summary: request.summary });
   await persist(project);
-  return { project: publicProject(project), diff, review: { score: review.score, counts: review.counts, top: review.issues.slice(0, 5) } };
+  return { project: publicProject(project), ...(captionsWarnings.length ? { warnings: captionsWarnings } : {}),
+    diff, review: { score: review.score, counts: review.counts, top: review.issues.slice(0, 5) } };
 }
 
 /** Copy a project (sources, options, plan, history seed) into a new project without exports. */
@@ -624,7 +636,8 @@ export async function reviewProject(id) {
   const project = await getProject(id);
   if (!project.plan) throw new StudioError('PLAN_REQUIRED', 'Create an edit proposal first.');
   return { revision: project.revision, ...reviewEdit({ clips: project.plan.clips, sources: project.sources, options: project.options,
-    beats: projectBeats(project), analyzed: project.sources.some(s => s.motion?.length) }) };
+    beats: projectBeats(project), analyzed: project.sources.some(s => s.motion?.length),
+    captionsDropped: Number(project.captionsDropped) || 0, captionsDroppedSources: project.captionsDroppedSources ?? [] }) };
 }
 export async function timelineProject(id, request = {}) {
   const project = await getProject(id);
@@ -806,6 +819,7 @@ async function loadTranscripts(project) {
   }
   return out;
 }
+const captionsLimitMessage = dropped => `${dropped} caption(s) were not added: at most ${LIMITS.captions} lines.`;
 function transcriptCaptions(clips, existing, transcripts) {
   const covered = new Set(Object.keys(transcripts).map(Number));
   const kept = existing.filter(c => !covered.has(c.sourceIndex));
@@ -813,7 +827,9 @@ function transcriptCaptions(clips, existing, transcripts) {
   const all = [...kept, ...made].sort((a, b) => a.sourceIndex - b.sourceIndex || a.start - b.start);
   // Report the cut instead of hiding it: a 20-minute talk used to lose its last
   // 14 minutes of captions here while the answer still said ok (#105).
-  return { captions: all.slice(0, LIMITS.captions), dropped: Math.max(0, all.length - LIMITS.captions) };
+  const leftOut = all.slice(LIMITS.captions);
+  return { captions: all.slice(0, LIMITS.captions), dropped: leftOut.length,
+    droppedSources: [...new Set(leftOut.map(c => c.sourceIndex))] };
 }
 async function saveTranscript(project, index, result) {
   const source = project.sources[index];
@@ -828,8 +844,9 @@ async function saveTranscript(project, index, result) {
 }
 function captionsRevision(project, transcripts, author) {
   if (!project.plan) return null;
-  const { captions, dropped } = transcriptCaptions(project.plan.clips, project.options.captions ?? [], transcripts);
+  const { captions, dropped, droppedSources } = transcriptCaptions(project.plan.clips, project.options.captions ?? [], transcripts);
   project.options = { ...project.options, captions, autoCaptions: true };
+  project.captionsDropped = dropped; project.captionsDroppedSources = droppedSources;
   return { dropped };
 }
 
@@ -859,7 +876,7 @@ export async function transcribeProject(id, request = {}) {
       await recordRevision(project, before, { by: request.author ?? 'engine', summary: 'Captions from transcript' });
     }
     project.message = `Transcript ready (${indices.map(i => project.transcripts[i].words).reduce((a, b) => a + b, 0)} words). Edit by text in the Transcript tab.`
-      + (captions?.dropped ? ` ${captions.dropped} caption(s) were not added: at most ${LIMITS.captions} lines.` : '');
+      + (captions?.dropped ? ` ${captionsLimitMessage(captions.dropped)}` : '');
   }, request.revision);
 }
 
@@ -896,7 +913,8 @@ export async function importTranscript(id, request = {}) {
     if (request.revision === undefined) throw new StudioError('INVALID_ARGUMENTS', 'captions:true needs the current revision.');
     edit = await editProject(id, { revision: request.revision, author: request.author, summary: 'Captions from imported transcript', operations: [{ op: 'set_options', options: { autoCaptions: true } }] });
   }
-  return { sourceIndex: index, words: record.words.length, engine: record.engine, wordTiming: record.wordTiming, ...(edit ? { project: edit.project } : {}) };
+  return { sourceIndex: index, words: record.words.length, engine: record.engine, wordTiming: record.wordTiming,
+    ...(edit?.warnings?.length ? { warnings: edit.warnings } : {}), ...(edit ? { project: edit.project } : {}) };
 }
 
 /** Read a transcript with in-edit flags; paged for long recordings. */
@@ -1057,6 +1075,8 @@ export async function autoEditProject(id, request = {}) {
     } catch (e) { throw new StudioError('AUTO_EDIT_FAILED', e.message); }
     const before = editState(project);
     project.options = await checkedOptions(built.options);
+    project.captionsDropped = built.report.captionsDropped ?? 0;
+    project.captionsDroppedSources = built.report.captionsDroppedSources ?? [];
     if (request.brand) project.options = await checkedOptions({ ...project.options, ...brandOptions(await getBrand(request.brand)) });
     if (request.brief) project.options.brief = String(request.brief).slice(0, 2000);
     project.plan = validateClips(built.clips, project.sources); project.plan.style = project.options.style;

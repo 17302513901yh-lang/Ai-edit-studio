@@ -426,7 +426,8 @@ function renderReview() {
   const curves = state.curves;
   const srcs = sources().map((s, i) => ({ ...s, black: curves?.[i]?.black ?? [], scenes: curves?.[i]?.cuts ?? [] }));
   try {
-    state.review = reviewEdit({ clips: state.clips, sources: srcs, options: state.options, beats: currentBeats(), analyzed: Boolean(curves), curves: curves ?? undefined });
+    state.review = reviewEdit({ clips: state.clips, sources: srcs, options: state.options, beats: currentBeats(), analyzed: Boolean(curves), curves: curves ?? undefined,
+      captionsDropped: Number(state.project?.captionsDropped) || 0, captionsDroppedSources: state.project?.captionsDroppedSources ?? [] });
   } catch (e) { console.warn(e); return; }
   const r = state.review;
   badge.hidden = false; badge.textContent = r.score; badge.className = `score-badge ${r.score >= 85 ? 'good' : r.score >= 65 ? 'mid' : 'bad'}`;

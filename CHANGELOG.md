@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- **Captions from a long transcript are no longer cut at 300 lines:** the limit now follows the longest edit the tool allows (one readable line per second, so 1200), and a project that still exceeds it is told how many lines were left out instead of being answered `ok` with a silent cut. Thanks to @17302513901yh-lang! (#105)
+- **Captions from a long transcript are no longer cut at 300 lines:** the limit now follows the longest edit the tool allows (one readable line per second, so 1200), and a project that still exceeds it gets a `warnings` entry on `studio_edit` / `studio_transcript {action:"import"}` plus a `CAPTIONS_LIMIT` note in `studio_review`, instead of being answered `ok` with a silent cut. Thanks to @17302513901yh-lang! (#105)
 - **Long Chinese and Japanese thumbnail and cover titles wrap by display width:** Han, Hiragana, Katakana and full-width punctuation count as two units, so a 22-unit thumbnail line holds eleven such characters and a 12-unit cover line holds six; a long CJK run inside a spaced title is cut too, Latin titles wrap exactly as before, and the ellipsis fits the width. Thanks to @17302513901yh-lang! (#97, #127)
 - **CJK queries and scripts work in `studio_search` and `studio_assemble`:** search queries and script lines are segmented with `splitWords()` like transcripts, so a Chinese or Japanese phrase typed without spaces now matches. Thanks to @17302513901yh-lang! (#122, #126)
 - Fix publish-pack YouTube chapters to use edit sections before falling back to labelled markers or clip labels. Thanks to @matiasad! (#121, #125)
