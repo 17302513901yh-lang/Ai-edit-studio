@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **A mistyped `GAME_TRAILER_STUDIO_PORT` is reported as `INVALID_PORT` right away:** `health()` used to swallow the error while deciding whether the server was up, so the CLI started a doomed daemon and answered `SERVER_START_FAILED` with a pointer to `server.log`. The port is now checked before anything is started or logged, and the message names the variable and the 1–65535 range. Thanks to @17302513901yh-lang! (#133, #142)
 - **Suggested sections no longer break a one-recording project:** `studio_sections {action:"suggest"}` never proposes two sections on the same shot, saving two sections on one shot is refused with `INVALID_SECTION` and a message that names both (through `studio_sections` and `studio_edit`), and a project that already holds such a pair opens again: the last section on the shot wins, so `studio_sections`, `studio_timeline`, the chapters export and `studio_publish_pack` answer instead of `INTERNAL_ERROR`. (#138)
 - CLI: `studio auto-edit` and `studio fit-duration` now work with hyphens, and an unknown tool name lists the tools and suggests a close match. Thanks to @versha-singh! (#101, #124)
 - **Captions from a long transcript are no longer cut at 300 lines:** the limit now follows the longest edit the tool allows (one readable line per second, so 1200), and a project that still exceeds it gets a `warnings` entry on `studio_edit` / `studio_transcript {action:"import"}` plus a `CAPTIONS_LIMIT` note in `studio_review`, instead of being answered `ok` with a silent cut. Thanks to @17302513901yh-lang! (#105, #131)
