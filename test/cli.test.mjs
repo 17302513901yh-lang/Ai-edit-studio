@@ -189,3 +189,21 @@ test('a bad GAME_TRAILER_STUDIO_PORT is INVALID_PORT before a server is started 
       && /GAME_TRAILER_STUDIO_PORT/.test(error.message), `refused ${JSON.stringify(bad)}`);
   }
 });
+
+test('hyphen and mixed-case tool names reach the same tool (#101)', async () => {
+  for (const name of ['auto-edit', 'Auto_Edit', 'auto_edit']) {
+    await assert.rejects(
+      runStudioCommand(name, {}, okApi),
+      err => err.code === 'INVALID_ARGUMENTS',
+    );
+  }
+});
+
+test('an unknown tool lists the tools and suggests a close name (#101)', async () => {
+  await assert.rejects(
+    runStudioCommand('auto-edt', {}, okApi),
+    err => err.code === 'UNKNOWN_TOOL'
+      && /Did you mean auto_edit\?/.test(err.message)
+      && /Tools: /.test(err.message),
+  );
+});
