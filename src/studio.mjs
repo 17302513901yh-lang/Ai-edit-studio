@@ -1008,6 +1008,22 @@ export async function textEditProject(id, request = {}) {
   return { ...result, stats };
 }
 
+/**
+ * A list of clip ids that is not "all" must name shots that exist. Without this,
+ * reframe / auto-zoom / colour-match skipped unknown ids and answered `ok` with a
+ * reason that was not true ("Nothing to reframe", "No shots long enough"), while
+ * the id-based edit path already refuses them with CLIP_NOT_FOUND (#135). Ids
+ * change after a split or a new proposal, so an old id is a common mistake.
+ * The wording matches resolveIndex() in public/edit-ops.js.
+ */
+export function assertKnownClips(project, refs) {
+  if (!Array.isArray(refs)) return; // "all", omitted, and any legacy shape keep their old handling
+  const known = new Set(project.plan.clips.map(c => c.id));
+  for (const ref of refs) {
+    if (!known.has(ref)) throw new StudioError('CLIP_NOT_FOUND', `Clip id ${ref} does not exist (anymore).`);
+  }
+}
+
 /** Motion-following focus per clip for a target aspect (cached per shot). */
 async function computeReframe(project, { aspect = '9:16', clips: refs = 'all', follow = true } = {}) {
   const target = ASPECTS[aspect];
@@ -1037,6 +1053,7 @@ async function computeReframe(project, { aspect = '9:16', clips: refs = 'all', f
 export async function reframeProject(id, request = {}) {
   if (busy) throw new StudioError('ENGINE_BUSY', 'An analysis or render is running. Reframe after it has finished.');
   const project = await getProject(id);
+  assertKnownClips(project, request.clips);
   if (active.has(project.status)) throw new StudioError('PROJECT_BUSY', 'Wait until this production has finished.');
   if (request.revision !== project.revision) throw new StudioError('REVISION_CONFLICT', 'Project changed elsewhere. Fetch the current revision.');
   await validateSourceState(project);
@@ -1635,6 +1652,7 @@ async function shotStats(source, start, end) {
 export async function colorMatchProject(id, request = {}) {
   const project = await getProject(id);
   if (!project.plan) throw new StudioError('PLAN_REQUIRED', 'Create an edit first.');
+  assertKnownClips(project, request.clips);
   await validateSourceState(project);
   const mode = request.mode ?? (request.reference ? 'match' : 'auto');
   if (!['auto', 'match'].includes(mode)) throw new StudioError('INVALID_ARGUMENTS', 'mode: auto or match.');
@@ -1904,6 +1922,7 @@ export async function sfxProject(id, request = {}) {
 export async function autoZoomProject(id, request = {}) {
   const project = await getProject(id);
   if (!project.plan) throw new StudioError('PLAN_REQUIRED', 'Create an edit first.');
+  assertKnownClips(project, request.clips);
   const style = request.style ?? 'punch', amount = Math.max(1.03, Math.min(1.4, Number(request.amount ?? (style === 'punch' ? 1.15 : 1.1)))), focusY = Math.max(0, Math.min(1, Number(request.focusY ?? 0.4)));
   const clips = project.plan.clips, ids = request.clips === undefined || request.clips === 'all' ? clips.filter(c => !project.sources[c.sourceIndex]?.still).map(c => c.id) : request.clips;
   let operations, detail;
