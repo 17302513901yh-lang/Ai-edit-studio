@@ -11,6 +11,7 @@
 - **CJK queries and scripts work in `studio_search` and `studio_assemble`:** search queries and script lines are segmented with `splitWords()` like transcripts, so a Chinese or Japanese phrase typed without spaces now matches. Thanks to @17302513901yh-lang! (#122, #126)
 - Fix publish-pack YouTube chapters to use edit sections before falling back to labelled markers or clip labels. Thanks to @matiasad! (#121, #125)
 - **A wrong `--duration`, `--fps` or `--seed` is refused instead of silently replaced:** `run --duration abc` used to render a 5-second trailer and `--fps 0` rendered at 24 fps, both reporting success. A non-number or out-of-range value now fails on the server with `INVALID_DURATION` / `INVALID_FPS` / `INVALID_SEED`, naming the value and the range, and no job is created; omitted flags keep their defaults. Thanks to @17302513901yh-lang! (#134, #143)
+- **A shot id that no longer exists is refused by every tool that takes `clips`:** `studio_reframe` and `studio_auto_zoom` used to answer `ok` with "Nothing to reframe (same aspect or stills)." / "No shots long enough.", and `studio_color_match` said "No matching shots.", because they skipped ids they did not know. All three now answer `CLIP_NOT_FOUND` with the id, like `studio_stabilize` already did (ids change after a split or a new edit proposal). `clips: "all"`, an omitted `clips` and a list of existing ids behave as before, and `dryRun` is covered. (#135)
 
 ## 0.12.0 — captions, chapters and a friendlier CLI
 
