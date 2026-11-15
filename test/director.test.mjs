@@ -75,6 +75,19 @@ test('SRT captions follow source trims, reorder, speed and timing correction', (
   assert.equal(mapCaptions(cues, [clip], 1)[0].start, 3);
   assert.throws(() => parseSrt('1\nnot a time\nHello')); assert.throws(() => normalizeCaptions([{ sourceIndex: 0, start: 5, end: 2, text: 'bad' }]));
   assert.throws(() => validateCaptionSources(cues, [{ duration: 3 }]));
+  // #136: the message names the caption, its end time and the source length,
+  // and a sourceIndex that does not exist gets its own clear message.
+  const over = [{ sourceIndex: 0, start: 25, end: 28, text: 'Past the end of the clip' }];
+  assert.throws(() => validateCaptionSources(over, [{ name: 'a.mp4', duration: 20 }]),
+    (e) => e.code === 'INVALID_CAPTIONS'
+      && /Caption 1 \("Past the end of the clip"\) ends at 28\.0 s, but source 0 \(a\.mp4\) is 20\.0 s long\./.test(e.message)
+      && /Use the SRT of the original source file\./.test(e.message));
+  assert.throws(() => validateCaptionSources([{ sourceIndex: 4, start: 1, end: 2, text: 'Hi' }], [{ duration: 20 }, { duration: 20 }]),
+    (e) => e.code === 'INVALID_CAPTIONS' && /Caption 1 points to source 4; this project has 2 sources\./.test(e.message));
+  assert.throws(() => validateCaptionSources([{ sourceIndex: 0, start: 1, end: 2, text: 'x'.repeat(90) }], [{ duration: 1 }]),
+    (e) => /"x{40}…"/.test(e.message), 'a long caption text is cut to about 40 characters');
+  assert.doesNotThrow(() => validateCaptionSources([{ sourceIndex: 0, start: 1, end: 2, text: 'Inside' }], [{ duration: 20 }]),
+    'captions inside the source are accepted as before');
 });
 test('SRT: one-digit hours and position coordinates after the end time are accepted', () => {
   const pick = ({ start, end, text }) => ({ start, end, text });
