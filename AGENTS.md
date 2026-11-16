@@ -157,6 +157,8 @@ and can make A/B projects with the other hooks (`variants:true`). Every step is 
 1. `studio_schema` → limits, operations, templates.
 2. `studio_create` (optional `template`: `shorts-hook`, `game-trailer`, `youtube-teaser`, `devlog`, `cinematic`, `square-post`)
    → `studio_analyze` → poll `studio_get` until `status` is `ready`.
+   A project made without a template has no `label` (top-right stamp) and no `endTitle` (end card / publish call to action);
+   only the `game-trailer` template sets `PRE-ALPHA FOOTAGE`. Pass `label` / `cta` explicitly if you want one.
 3. **See** the edit: `studio_timeline` (text) + `studio_storyboard` (one JPEG) + `studio_frame` for details.
 4. **Find** material: `studio_highlights`; **music**: `studio_beats`.
 5. **Change** with `studio_edit` — atomic batch, `dryRun: true` first when unsure:

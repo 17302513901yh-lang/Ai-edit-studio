@@ -831,7 +831,7 @@ export const NL = {
  "cool, subtle contrast": "koel, subtiel contrast",
  "cuts at the playhead,": "knipt bij de afspeelkop,",
  "double-click to remove": "dubbelklik om te verwijderen",
- "e.g. PRE-ALPHA FOOTAGE": "bijv. PRE-ALPHA FOOTAGE",
+ "e.g. WORK IN PROGRESS": "bijv. WERK IN UITVOERING",
  "e.g. Wishlist now": "bijv. Wishlist nu",
  "e.g. hook, landing, reveal": "bijv. hook, landing, reveal",
  "every 2nd": "om de 2",
