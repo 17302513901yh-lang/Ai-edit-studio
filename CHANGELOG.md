@@ -15,6 +15,7 @@
 - **Argument errors say what is allowed:** `INVALID_ARGUMENTS` messages now list the allowed choices, the numeric bounds (`>= 1`), the text length limit and the expected identifier pattern, without echoing the value that was sent. The error code and the `arguments.<path>:` prefix are unchanged, and invalid calls still fail before any API call. Thanks to @RealBhupesh! (#91, #119)
 - **A freeze frame at or after the end of the edit is refused with a clear message:** `studio_freeze` names the edit's range (for example `0–20 s`) before FFmpeg runs, instead of failing with `UNSUPPORTED_MEDIA` for a frame that does not exist. Thanks to @tnalbant! (#132, #148)
 - **Caption errors name the caption and the source:** `INVALID_CAPTIONS` says which caption ends after its source, how long the source is, and which `sourceIndex` does not exist. Thanks to @17302513901yh-lang! (#136, #150)
+- **A project made without a template has no game-trailer stamp:** `label` and `endTitle` default to empty instead of `PRE-ALPHA FOOTAGE` / `IN DEVELOPMENT`, so a holiday clip no longer gets a game stamp and its publish drafts no longer use `IN DEVELOPMENT` as the call to action. The `game-trailer` template keeps its stamp, explicit values are kept, and existing projects keep what they stored. Thanks to @17302513901yh-lang! (#104, #156)
 
 ## 0.12.0 — captions, chapters and a friendlier CLI
 
