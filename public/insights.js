@@ -169,9 +169,44 @@ export function reviewEdit({ clips, sources, options = {}, beats = [], analyzed 
   if (options.narration && Number(options.narrationStart) >= total) add('error', 'NARRATION_AFTER_END', 'Voice-over starts after the end of the edit.', { fix: { label: 'Start voice-over at 0', operations: [{ op: 'set_options', options: { narrationStart: 0 } }] } });
   if (finaleProtected && Number(options.fadeOut) > 0) add('tip', 'FINALE_FADE', 'Your finale fades out at the end. Fade-out 0 keeps the last frames fully visible.', { fix: { label: 'Fade-out off', operations: [{ op: 'set_options', options: { fadeOut: 0 } }] } });
   // Timeline texts count too: a hook text in the first seconds or a call to action at the end.
+  // A text that lies entirely after the edit is not "text at the end": it is never
+  // rendered at all, so it must not hide the NO_TEXT tip (#139).
   const timelineTexts = Array.isArray(options.texts) ? options.texts : [];
-  const textAtEdges = timelineTexts.some(x => Number(x.start) < 3 || Number(x.end) > total - 3);
+  const visibleTexts = timelineTexts.filter(x => Number(x.start) < total);
+  const textAtEdges = visibleTexts.some(x => Number(x.start) < 3 || Number(x.end) > total - 3);
   if (!options.title && !options.endTitle && !textAtEdges) add('tip', 'NO_TEXT', 'No opening or end text. A short title or call to action helps viewers.');
+
+  // Elements past the end of the edit are saved but never shown or heard. Keeping
+  // them is allowed — an edit can grow again — so the review reports them with a
+  // fix that can be sent to studio_edit unchanged (#139).
+  timelineTexts.forEach((x, i) => {
+    const start = Number(x.start), end = Number(x.end);
+    const label = x.text ? ` "${String(x.text).slice(0, 40)}"` : '';
+    if (start >= total) {
+      add('warning', 'TEXT_AFTER_END', `Text ${i + 1}${label} starts at ${round(start)} s, after the ${round(total)} s edit ends, so it is never shown.`, { time: start,
+        fix: { label: 'Remove the text', operations: [{ op: 'remove_text', index: i }] } });
+    } else if (end > total) {
+      // Shortening is only possible when at least a tenth of a second remains;
+      // otherwise a text that starts almost at the end has to be removed.
+      const fix = total - start > 0.1
+        ? { label: 'Shorten the text', operations: [{ op: 'update_text', index: i, end: round(total) }] }
+        : { label: 'Remove the text', operations: [{ op: 'remove_text', index: i }] };
+      add('warning', 'TEXT_CUT_OFF', `Text ${i + 1}${label} ends at ${round(end)} s but the edit ends at ${round(total)} s, so it is cut off.`, { time: start, fix });
+    }
+  });
+  const markers = Array.isArray(options.markers) ? options.markers : [];
+  markers.forEach((m, i) => {
+    const time = Number(m.time);
+    if (time >= total) add('tip', 'MARKER_AFTER_END', `Marker ${i + 1} ("${String(m.label ?? '').slice(0, 40)}") is at ${round(time)} s, after the ${round(total)} s edit ends.`, { time,
+      fix: { label: 'Remove the marker', operations: [{ op: 'remove_marker', index: i }] } });
+  });
+  const sfx = Array.isArray(options.sfx) ? options.sfx : [];
+  const lateSfx = sfx.map((s, i) => ({ s, i })).filter(({ s }) => Number(s.time) >= total);
+  if (lateSfx.length) {
+    const kept = sfx.filter(s => Number(s.time) < total);
+    add('warning', 'SFX_AFTER_END', `${lateSfx.length} sound effect(s) start at or after the ${round(total)} s end of the edit and are never heard.`, { time: Number(lateSfx[0].s.time),
+      fix: { label: 'Remove the effects after the end', operations: [{ op: 'set_options', options: { sfx: kept } }] } });
+  }
 
   const cues = mapCaptions(options.captions ?? [], clips, Number(options.captionOffset) || 0);
   cues.forEach((cue, i) => {
