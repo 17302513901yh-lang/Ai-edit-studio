@@ -264,7 +264,10 @@ export async function buildPublishPack(project, dir, request = {}, { brand = nul
   }
   const chapterList = chapters(project.plan.clips, project.options);
   const tags = uniqueHashtags([...(brand?.hashtags ?? []), ...hashtags(title, project.options.brief ?? '')]).slice(0, 6);
-  const drafts = metadataDrafts({ title, brief: project.options.brief, cta: project.options.endTitle, chapterList, tags, platforms });
+  // #104: an empty endTitle is no call to action. metadataDrafts already drops
+  // a falsy cta; say it here too so a blank line is never mistaken for one.
+  const cta = project.options.endTitle || undefined;
+  const drafts = metadataDrafts({ title, brief: project.options.brief, cta, chapterList, tags, platforms });
   const md = [`# ${title}`, '', `Revision ${project.revision} · ${totalDuration(project.plan.clips).toFixed(1)} s · drafts — review before posting.`, '',
     ...(chapterList.length ? ['## Chapters', '', ...chapterList.map(c => c.line), ''] : []),
     ...Object.values(drafts).flatMap(d => [`## ${d.platform}`, '', ...(d.title ? [`**Title:** ${d.title}`, ''] : []), d.description, '']),

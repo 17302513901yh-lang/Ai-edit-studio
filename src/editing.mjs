@@ -102,8 +102,13 @@ export function normalizeOptions(value = {}) {
     masterFormat, socialSize, exportVertical: value.exportVertical ?? true, exportShare: value.exportShare ?? true,
     exportSquare: value.exportSquare ?? false, exportPortrait: value.exportPortrait ?? false,
     title: text(value.title, 100),
-    label: text(value.label ?? 'PRE-ALPHA FOOTAGE', 70),
-    endTitle: text(value.endTitle ?? 'IN DEVELOPMENT', 100),
+    // A project that is not made from the game-trailer template has no stamp:
+    // the old defaults ("PRE-ALPHA FOOTAGE" / "IN DEVELOPMENT") were leftovers
+    // of the game-trailer origin and ended up baked into holiday clips and used
+    // as the call to action of publish drafts (#104). Templates and explicit
+    // values still set their own text, and existing projects keep what they stored.
+    label: text(value.label ?? '', 70),
+    endTitle: text(value.endTitle ?? '', 100),
     style,
     duration: bounded(value.duration, 30, 5, LIMITS.editSeconds, 'Duration'),
     trimStart: bounded(value.trimStart, 0, 0, 600, 'Skip start'),
