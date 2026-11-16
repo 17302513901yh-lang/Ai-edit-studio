@@ -133,9 +133,20 @@ export function validateOverlaySources(overlays = [], sources) {
   });
 }
 export function validateCaptionSources(captions, sources) {
-  for (const cue of captions) if (!sources[cue.sourceIndex] || cue.end > sources[cue.sourceIndex].duration + 0.05) {
-    throw new StudioError('INVALID_CAPTIONS', 'Caption points outside the selected source. Use the SRT of the original source file.');
-  }
+  const hint = 'Use the SRT of the original source file.';
+  captions.forEach((cue, i) => {
+    const source = sources[cue.sourceIndex];
+    if (!source) {
+      const n = sources.length;
+      throw new StudioError('INVALID_CAPTIONS', `Caption ${i + 1} points to source ${cue.sourceIndex}; this project has ${n} source${n === 1 ? '' : 's'}.`);
+    }
+    if (cue.end > source.duration + 0.05) {
+      const raw = String(cue.text ?? '');
+      const text = raw.slice(0, 40) + (raw.length > 40 ? '…' : '');
+      const label = source.name ? ` (${source.name})` : '';
+      throw new StudioError('INVALID_CAPTIONS', `Caption ${i + 1} ("${text}") ends at ${Number(cue.end).toFixed(1)} s, but source ${cue.sourceIndex}${label} is ${Number(source.duration).toFixed(1)} s long. ${hint}`);
+    }
+  });
 }
 
 /** Only indices of already registered media are accepted, never arbitrary paths. */
