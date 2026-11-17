@@ -7,6 +7,11 @@ import { mapCaptions } from './captions.js';
 const STEP = 0.5;
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
 const round = (n, d = 3) => Math.round(n * 10 ** d) / 10 ** d;
+// A fix that shortens a text to the end must never land past it. round() rounds
+// UP (12.3456 -> 12.346), so applying the fix still reports TEXT_CUT_OFF and an
+// agent loops on it. Round DOWN to the millisecond instead: the result is stable
+// under normalizeText()'s own 3-decimal round and is always <= the edit end (#139).
+const floorToMs = n => Math.floor(n * 1000) / 1000;
 
 function percentile(values, p) {
   if (!values.length) return 0;
@@ -187,9 +192,15 @@ export function reviewEdit({ clips, sources, options = {}, beats = [], analyzed 
         fix: { label: 'Remove the text', operations: [{ op: 'remove_text', index: i }] } });
     } else if (end > total) {
       // Shortening is only possible when at least a tenth of a second remains;
-      // otherwise a text that starts almost at the end has to be removed.
-      const fix = total - start > 0.1
-        ? { label: 'Shorten the text', operations: [{ op: 'update_text', index: i, end: round(total) }] }
+      // otherwise a text that starts almost at the end has to be removed. The
+      // shortened end must be rounded DOWN: round(total) can round up past the
+      // edit end (12.3456 -> 12.346), so applying the fix would report the same
+      // TEXT_CUT_OFF again and an agent would loop on it (#139). Decide whether
+      // shortening is possible from that very value, so the fix we offer is one
+      // that normalizeText() will actually accept.
+      const shortened = floorToMs(total);
+      const fix = shortened - start > 0.1
+        ? { label: 'Shorten the text', operations: [{ op: 'update_text', index: i, end: shortened }] }
         : { label: 'Remove the text', operations: [{ op: 'remove_text', index: i }] };
       add('warning', 'TEXT_CUT_OFF', `Text ${i + 1}${label} ends at ${round(end)} s but the edit ends at ${round(total)} s, so it is cut off.`, { time: start, fix });
     }
