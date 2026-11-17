@@ -223,13 +223,26 @@ test('publish: chapters use sections before markers or clip labels', () => {
   );
 });
 
-test('publish: hashtags preserve Japanese voiced kana', () => {
+test('publish: hashtags preserve Japanese voiced kana and are word-sized', () => {
+  // #88 kept the voiced marks; #92 also splits the clause into real words.
   assert.deepEqual(
     hashtags('新しいアップデートが公開されました', 'ゲームの新しいステージ'),
-    ['新しいアップデートが公開されました', 'ゲームの新しいステージ']
+    ['新しい', 'アップデート', '公開', 'ゲーム', 'ステージ']
   );
-
   assert.deepEqual(hashtags('アップデート'), ['アップデート']);
+  const ja = hashtags('ゲームの新しいステージ');
+  assert.deepEqual(ja, ['ゲーム', '新しい', 'ステージ']);
+  assert.ok(ja.every(tag => !/[\u0300-\u036f\u3099\u309a]/.test(tag)), 'no decomposed voiced marks in the tags');
+  assert.ok(!ja.some(tag => /[がのをは]/.test(tag)), 'particles do not become tags');
+});
+
+test('publish: Chinese hashtags are words, not clauses', () => {
+  const tags = hashtags('今天我们来做一个游戏', '这是我们的新关卡预告片，欢迎大家观看');
+  assert.ok(tags.includes('游戏') && tags.includes('预告片'), `topic words are missing: ${tags.join(', ')}`);
+  assert.ok(tags.every(tag => [...tag].length <= 3 && !/[，。！？]/.test(tag)), `a clause leaked through: ${tags.join(', ')}`);
+  assert.ok(tags.length > 0 && tags.length <= 5);
+  // A short CJK word is a real tag even though it is shorter than the 4-character Latin threshold.
+  assert.deepEqual(hashtags('新作 trailer 公開'), ['新作', 'trailer', '公開']);
 });
 
 test('publish: hashtags still fold Latin accents', () => {
@@ -267,6 +280,9 @@ test('publish: hashtags preserve English and Dutch examples', () => {
     hashtags('Deze video gaat over onze nieuwe Apache helikopter met laser'),
     ['video', 'gaat', 'apache', 'helikopter', 'laser']
   );
+  // The CJK branch must not change how Latin runs are split or capped (#92).
+  assert.deepEqual(hashtags('AH-64 Apache laser guided missiles', 'Our helicopter game'), ['apache', 'laser', 'guided', 'missiles', 'helicopter']);
+  assert.deepEqual(hashtags('  lots   of-spaces_and.mixed  abcd  xy  '), ['lots', 'spaces', 'mixed', 'abcd']);
 });
 
 test('publish: a long brief is shortened so the call to action and the hashtags still fit', () => {

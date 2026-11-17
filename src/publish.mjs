@@ -12,6 +12,7 @@ import { filterColors } from './render.mjs';
 import { layout, totalDuration, sectionSpans } from '../public/edit-ops.js';
 import { curvesFor, clipEnergy } from '../public/insights.js';
 import { mapCaptions, toSrt, toVtt } from '../public/captions.js';
+import { CJK_RE, splitWords } from '../public/transcript.js';
 // Width in "Latin units" for the fixed-size font used by the publish pack:
 // Han / Hiragana / Katakana and full-width punctuation take twice the room of
 // a Latin letter. Counting UTF-16 units for everything else keeps the
@@ -76,8 +77,33 @@ export function chapters(clips, options = {}) {
   return out.length >= 3 ? out.map(r => ({ time: Math.round(r.time), title: r.title, line: `${fmt(r.time)} ${r.title}` })) : [];
 }
 
+// Chinese and Japanese have no spaces: [\p{L}\p{N}]{4,} would turn a whole
+// clause into one tag (#92). splitWords() is the shared CJK helper from the
+// transcript module (Intl.Segmenter, no dependency); keep word-sized pieces and
+// drop the same kind of function words the Latin stop list below removes.
+// Voiced kana (ゲ, ヴ) survive the accent fold below (NFC recomposes them), and
+// this helper never strips combining marks of its own (#88).
+const CJK_STOP = new Set([
+  '我们', '你们', '他们', '大家', '一个', '这个', '那个', '这些', '那些', '这里', '那里',
+  '什么', '怎么', '因为', '所以', '但是', '而且', '以及', '可以', '已经', '还是',
+  'した', 'です', 'ます', 'して', 'いる', 'ある', 'こと', 'もの', 'ため', 'から', 'まで',
+]);
+function cjkHashtagWords(token) {
+  return splitWords(token)
+    .map(part => part.replace(/[^\p{L}\p{N}]+/gu, ''))
+    .filter(part => [...part].length >= 2 && !CJK_STOP.has(part));
+}
+
 export function hashtags(...texts) {
- const words = texts.join(' ').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').normalize('NFC').match(/[\p{L}\p{N}]{4,}/gu) ?? [];
+ // Tokens are the same maximal [\p{L}\p{N}] runs the old {4,} regex found.
+ // For Latin nothing changes: only runs of 4+ characters become candidates.
+ // For CJK a word is 2-3 characters, so a short title such as 新作 must not be
+ // thrown away just because the Latin threshold is four.
+ const folded = texts.join(' ').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').normalize('NFC');
+ const words = folded.split(/[^\p{L}\p{N}]+/u).filter(Boolean).flatMap(token => {
+   if (CJK_RE.test(token)) return cjkHashtagWords(token);
+   return [...token].length >= 4 ? [token] : [];
+ });
   const stop = new Set(['with', 'this', 'that', 'from', 'your', 'have', 'will', 'what', 'when', 'into', 'over', 'they', 'them', 'voor', 'naar', 'deze', 'met', 'maar', 'niet', 'zijn', 'wordt', 'worden', 'onze', 'jouw', 'heeft', 'more', 'than', 'just', 'like',
     // common English and Dutch function words of 4+ letters (#61) — without them they fill the
     // first five tags and push the real topic words out
